@@ -61,6 +61,7 @@ export type Database = {
       }
       products: {
         Row: {
+          brand: string | null
           category: string
           created_at: string
           description: string | null
@@ -71,9 +72,11 @@ export type Database = {
           name: string
           price: number
           stock: number
+          subcategory: string | null
           unit: string | null
         }
         Insert: {
+          brand?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -84,9 +87,11 @@ export type Database = {
           name: string
           price: number
           stock?: number
+          subcategory?: string | null
           unit?: string | null
         }
         Update: {
+          brand?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -97,6 +102,7 @@ export type Database = {
           name?: string
           price?: number
           stock?: number
+          subcategory?: string | null
           unit?: string | null
         }
         Relationships: []

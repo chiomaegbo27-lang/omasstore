@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy, MessageCircle, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { STORE, formatNGN, ZONES, type Zone } from "@/lib/store";
+import { OrderProgress, type OrderStatus } from "@/components/OrderProgress";
 import { toast } from "sonner";
 
 interface Order {
@@ -16,6 +17,7 @@ interface Order {
   subtotal: number;
   total: number;
   items: { id: string; name: string; price: number; qty: number }[];
+  status: OrderStatus;
   created_at: string;
 }
 
@@ -76,6 +78,12 @@ I will send proof of payment shortly. Thank you!`;
         <h1 className="font-display text-2xl font-bold">Order placed!</h1>
         <p className="mt-1 text-sm text-muted-foreground">Order ID: <span className="font-mono font-semibold">#{order.id.slice(0, 8).toUpperCase()}</span></p>
       </div>
+
+      {/* Progress tracker */}
+      <div className="mb-6">
+        <OrderProgress status={(order.status ?? "pending") as OrderStatus} />
+      </div>
+
 
       {/* Bank details */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
