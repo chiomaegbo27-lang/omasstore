@@ -1,26 +1,87 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowRight, Truck, ShieldCheck, Clock } from "lucide-react";
+import heroImg from "@/assets/hero.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { ProductCard, type Product } from "@/components/ProductCard";
+import { STORE } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: Home,
+  head: () => ({
+    meta: [
+      { title: `${STORE.name} — Groceries & Essentials Delivered in Enugu` },
+      { name: "description", content: "Garri, rice, noodles, drinks & household essentials. Order via WhatsApp, pay on delivery zones across Enugu." },
+    ],
+  }),
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function Home() {
+  const [featured, setFeatured] = useState<Product[]>([]);
+
+  useEffect(() => {
+    supabase.from("products").select("*").eq("in_stock", true).limit(8)
+      .then(({ data }) => setFeatured((data ?? []) as Product[]));
+  }, []);
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div>
+      {/* Hero */}
+      <section className="relative overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
+        <div className="container mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-2 md:items-center md:py-20">
+          <div className="space-y-5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
+              🛵 Same-day delivery in Enugu
+            </span>
+            <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
+              Your everyday store, <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">just a tap away.</span>
+            </h1>
+            <p className="max-w-md text-base text-muted-foreground md:text-lg">{STORE.tagline}</p>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/shop" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 active:scale-95">
+                Shop Now <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a href={`https://wa.me/${STORE.whatsapp}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold hover:bg-muted">
+                Chat on WhatsApp
+              </a>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-pink-soft to-blue-soft blur-2xl" />
+            <img src={heroImg} alt="Basket of fresh Nigerian groceries" width={1280} height={896} className="relative mx-auto w-full max-w-md rounded-[2rem] shadow-glow" />
+          </div>
+        </div>
+      </section>
+
+      {/* Trust strip */}
+      <section className="border-y border-border bg-background">
+        <div className="container mx-auto grid max-w-6xl grid-cols-3 gap-2 px-4 py-5 text-center text-xs sm:text-sm">
+          {[
+            { icon: Truck, t: "Fast delivery", s: "From ₦500" },
+            { icon: ShieldCheck, t: "Genuine items", s: "Quality guaranteed" },
+            { icon: Clock, t: "Open daily", s: "8am – 8pm" },
+          ].map(({ icon: I, t, s }) => (
+            <div key={t} className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-center sm:gap-2">
+              <I className="h-5 w-5 text-primary" />
+              <div className="leading-tight"><div className="font-semibold">{t}</div><div className="text-muted-foreground">{s}</div></div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured */}
+      <section className="container mx-auto max-w-6xl px-4 py-12 md:py-16">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-2xl font-bold md:text-3xl">Featured today</h2>
+            <p className="text-sm text-muted-foreground">Hand-picked essentials at fair prices.</p>
+          </div>
+          <Link to="/shop" className="text-sm font-semibold text-primary hover:underline">See all →</Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">
+          {featured.map((p) => <ProductCard key={p.id} p={p} />)}
+        </div>
+      </section>
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
