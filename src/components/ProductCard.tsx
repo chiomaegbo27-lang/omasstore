@@ -13,6 +13,8 @@ export interface Product {
   in_stock: boolean;
   stock: number;
   unit: string | null;
+  subcategory?: string | null;
+  brand?: string | null;
 }
 
 export function ProductCard({ p }: { p: Product }) {
