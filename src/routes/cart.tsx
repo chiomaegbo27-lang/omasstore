@@ -37,7 +37,9 @@ function CartPage() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{i.name}</div>
-              <div className="text-sm text-primary">{formatNGN(i.price)}</div>
+              <div className="text-sm text-primary">
+                {formatNGN(i.price)}{i.unit ? <span className="text-xs text-muted-foreground"> / {i.unit}</span> : null}
+              </div>
             </div>
             <div className="flex items-center gap-1 rounded-full border border-border">
               <button onClick={() => setQty(i.id, i.qty - 1)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted" aria-label="Decrease">
