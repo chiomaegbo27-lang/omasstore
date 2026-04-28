@@ -70,6 +70,8 @@ export type Database = {
           in_stock: boolean
           name: string
           price: number
+          stock: number
+          unit: string | null
         }
         Insert: {
           category: string
@@ -81,6 +83,8 @@ export type Database = {
           in_stock?: boolean
           name: string
           price: number
+          stock?: number
+          unit?: string | null
         }
         Update: {
           category?: string
@@ -92,6 +96,8 @@ export type Database = {
           in_stock?: boolean
           name?: string
           price?: number
+          stock?: number
+          unit?: string | null
         }
         Relationships: []
       }

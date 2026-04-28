@@ -5,6 +5,7 @@ export interface CartItem {
   name: string;
   price: number;
   emoji?: string | null;
+  unit?: string | null;
   qty: number;
 }
 
