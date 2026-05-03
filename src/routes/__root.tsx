@@ -1,7 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { CartProvider } from "@/lib/cart";
-import { AuthProvider } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { Toaster } from "@/components/ui/sonner";
@@ -31,8 +30,15 @@ export const Route = createRootRoute({
       { name: "description", content: "Order garri, rice, noodles, drinks, and household essentials from Oma's Store. Fast WhatsApp ordering and same-day delivery in Enugu." },
       { name: "theme-color", content: "#ffffff" },
       { property: "og:title", content: `${STORE.name} — Groceries delivered in Enugu` },
-      { property: "og:description", content: "Everyday groceries & essentials, delivered fast in Enugu." },
+      { property: "og:description", content: "Order garri, rice, noodles, drinks, and household essentials from Oma's Store. Fast WhatsApp ordering and same-day delivery in Enugu." },
       { property: "og:type", content: "website" },
+      { title: "Lovable App" },
+      { property: "og:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:description", content: "Order garri, rice, noodles, drinks, and household essentials from Oma's Store. Fast WhatsApp ordering and same-day delivery in Enugu." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/08c30a18-1a79-44a4-852f-719da083d194/id-preview-254e0544--6f318707-c0e4-4988-8d44-2eb646b1dada.lovable.app-1777834780904.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/08c30a18-1a79-44a4-852f-719da083d194/id-preview-254e0544--6f318707-c0e4-4988-8d44-2eb646b1dada.lovable.app-1777834780904.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -60,20 +66,18 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1"><Outlet /></main>
-          <footer className="border-t border-border bg-muted/40">
-            <div className="container mx-auto max-w-6xl px-4 py-8 text-center text-xs text-muted-foreground">
-              © {new Date().getFullYear()} {STORE.name} • {STORE.address}
-            </div>
-          </footer>
-          <WhatsAppFab />
-          <Toaster position="top-center" />
-        </div>
-      </CartProvider>
-    </AuthProvider>
+    <CartProvider>
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1"><Outlet /></main>
+        <footer className="border-t border-border bg-muted/40">
+          <div className="container mx-auto max-w-6xl px-4 py-8 text-center text-xs text-muted-foreground">
+            © {new Date().getFullYear()} {STORE.name} • {STORE.address}
+          </div>
+        </footer>
+        <WhatsAppFab />
+        <Toaster position="top-center" />
+      </div>
+    </CartProvider>
   );
 }
