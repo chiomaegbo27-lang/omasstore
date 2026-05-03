@@ -46,7 +46,7 @@ function AdminPage() {
       supabase.from("meal_orders").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("profiles").select("user_id, display_name, loyalty_points, phone, created_at").order("created_at", { ascending: false }),
     ]);
-    const o = (ordersRes.data ?? []) as OrderRow[];
+    const o = (ordersRes.data ?? []) as unknown as OrderRow[];
     setOrders(o);
     setMealOrders((mealOrdersRes.data ?? []) as MealOrderRow[]);
     setCustomers(profilesRes.data ?? []);
