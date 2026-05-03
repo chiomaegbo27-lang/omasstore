@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { CartProvider } from "@/lib/cart";
+import { AuthProvider } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { Toaster } from "@/components/ui/sonner";
@@ -59,18 +60,20 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <CartProvider>
-      <div className="flex min-h-screen flex-col">
-        <Header />
-        <main className="flex-1"><Outlet /></main>
-        <footer className="border-t border-border bg-muted/40">
-          <div className="container mx-auto max-w-6xl px-4 py-8 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} {STORE.name} • {STORE.address}
-          </div>
-        </footer>
-        <WhatsAppFab />
-        <Toaster position="top-center" />
-      </div>
-    </CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex-1"><Outlet /></main>
+          <footer className="border-t border-border bg-muted/40">
+            <div className="container mx-auto max-w-6xl px-4 py-8 text-center text-xs text-muted-foreground">
+              © {new Date().getFullYear()} {STORE.name} • {STORE.address}
+            </div>
+          </footer>
+          <WhatsAppFab />
+          <Toaster position="top-center" />
+        </div>
+      </CartProvider>
+    </AuthProvider>
   );
 }

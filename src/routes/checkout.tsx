@@ -1,33 +1,61 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/lib/cart";
-import { formatNGN, ZONES, type Zone } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
+import { formatNGN } from "@/lib/store";
+import { calculatePointsEarned, pointsToNaira } from "@/lib/loyalty";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Star } from "lucide-react";
 
 export const Route = createFileRoute("/checkout")({
   component: Checkout,
   head: () => ({ meta: [{ title: "Checkout — Oma's Store" }] }),
 });
 
+interface DeliveryLoc { id: string; name: string; zone: string; fee: number; estimated_time: string; }
+
 function Checkout() {
   const navigate = useNavigate();
   const { items, subtotal, clear } = useCart();
+  const { user, profile, refreshProfile } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [fulfillment, setFulfillment] = useState<"pickup" | "delivery">("delivery");
-  const [zone, setZone] = useState<Zone>("A");
+  const [locationId, setLocationId] = useState("");
+  const [locations, setLocations] = useState<DeliveryLoc[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
 
-  const deliveryFee = fulfillment === "delivery" ? ZONES[zone].fee : 0;
-  const total = subtotal + deliveryFee;
+  useEffect(() => {
+    supabase.from("delivery_locations").select("*").order("name").then(({ data }) => {
+      setLocations((data ?? []) as DeliveryLoc[]);
+    });
+  }, []);
+
+  // Pre-fill from profile
+  useEffect(() => {
+    if (profile) {
+      if (profile.display_name) setName(profile.display_name);
+      if (profile.phone) setPhone(profile.phone);
+      if (profile.address) setAddress(profile.address);
+    }
+  }, [profile]);
+
+  const selectedLoc = locations.find((l) => l.id === locationId);
+  const deliveryFee = fulfillment === "delivery" && selectedLoc ? selectedLoc.fee : 0;
+  const pointsDiscount = pointsToNaira(pointsToUse);
+  const total = Math.max(0, subtotal + deliveryFee - pointsDiscount);
+  const pointsEarned = calculatePointsEarned(total);
+  const maxPoints = Math.min(profile?.loyalty_points ?? 0, subtotal + deliveryFee);
+
   const canSubmit = useMemo(() => {
     if (items.length === 0) return false;
     if (!name.trim() || !phone.trim()) return false;
-    if (fulfillment === "delivery" && !address.trim()) return false;
+    if (fulfillment === "delivery" && (!address.trim() || !locationId)) return false;
     return true;
-  }, [items, name, phone, address, fulfillment]);
+  }, [items, name, phone, address, fulfillment, locationId]);
 
   if (items.length === 0) {
     return (
@@ -46,10 +74,13 @@ function Checkout() {
       phone: phone.trim(),
       address: fulfillment === "delivery" ? address.trim() : null,
       fulfillment,
-      zone: fulfillment === "delivery" ? zone : null,
+      zone: fulfillment === "delivery" && selectedLoc ? selectedLoc.zone : null,
       delivery_fee: deliveryFee,
       subtotal,
       total,
+      points_used: pointsToUse,
+      points_earned: pointsEarned,
+      user_id: user?.id ?? null,
       items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
     };
     const { data, error } = await supabase.from("orders").insert(payload).select("id").single();
@@ -80,16 +111,10 @@ function Checkout() {
             <div className="mb-2 text-sm font-semibold">How would you like to receive your order?</div>
             <div className="grid grid-cols-2 gap-2">
               {(["pickup", "delivery"] as const).map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setFulfillment(opt)}
-                  className={`rounded-xl border p-3 text-left text-sm transition ${
-                    fulfillment === opt ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background hover:bg-muted"
-                  }`}
-                >
+                <button key={opt} type="button" onClick={() => setFulfillment(opt)}
+                  className={`rounded-xl border p-3 text-left text-sm transition ${fulfillment === opt ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-background hover:bg-muted"}`}>
                   <div className="font-semibold capitalize">{opt}</div>
-                  <div className="text-xs text-muted-foreground">{opt === "pickup" ? "Free • Ekulu West GRA" : "Choose your zone"}</div>
+                  <div className="text-xs text-muted-foreground">{opt === "pickup" ? "Free • Ekulu West GRA" : "Choose your area"}</div>
                 </button>
               ))}
             </div>
@@ -97,18 +122,35 @@ function Checkout() {
 
           {fulfillment === "delivery" && (
             <>
+              <Field label="Delivery area">
+                <select value={locationId} onChange={(e) => setLocationId(e.target.value)} className="input">
+                  <option value="">Select your area</option>
+                  {locations.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name} — {formatNGN(l.fee)} ({l.estimated_time})</option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Delivery address">
                 <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={3} className="input resize-none" placeholder="House no, street, area, landmark" />
               </Field>
-              <Field label="Delivery zone">
-                <select value={zone} onChange={(e) => setZone(e.target.value as Zone)} className="input">
-                  {(Object.keys(ZONES) as Zone[]).map((z) => (
-                    <option key={z} value={z}>{ZONES[z].label} — {formatNGN(ZONES[z].fee)}</option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-muted-foreground">Distances measured from No 3 Ubakulu Street, Ekulu West GRA, Enugu.</p>
-              </Field>
             </>
+          )}
+
+          {/* Loyalty points */}
+          {user && (profile?.loyalty_points ?? 0) > 0 && (
+            <div className="rounded-xl border border-accent/30 bg-accent/5 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Star className="h-4 w-4 text-accent" />
+                <span className="text-sm font-semibold">Use Loyalty Points</span>
+                <span className="text-xs text-muted-foreground">({profile?.loyalty_points} pts = {formatNGN(profile?.loyalty_points ?? 0)})</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <input type="range" min={0} max={maxPoints} value={pointsToUse} onChange={(e) => setPointsToUse(Number(e.target.value))}
+                  className="flex-1 accent-accent" />
+                <span className="text-sm font-bold text-accent">{pointsToUse} pts</span>
+              </div>
+              {pointsToUse > 0 && <div className="mt-1 text-xs text-accent">-{formatNGN(pointsDiscount)} discount</div>}
+            </div>
           )}
         </div>
 
@@ -125,19 +167,28 @@ function Checkout() {
           </div>
           <div className="space-y-1.5 border-t border-border pt-3 text-sm">
             <Row label="Subtotal" value={formatNGN(subtotal)} />
-            <Row label={fulfillment === "delivery" ? `Delivery (Zone ${zone})` : "Pickup"} value={formatNGN(deliveryFee)} />
+            <Row label={fulfillment === "delivery" ? `Delivery (${selectedLoc?.name ?? "—"})` : "Pickup"} value={formatNGN(deliveryFee)} />
+            {selectedLoc && <div className="text-xs text-muted-foreground">Est. {selectedLoc.estimated_time}</div>}
+            {pointsToUse > 0 && <Row label="Points discount" value={`-${formatNGN(pointsDiscount)}`} />}
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
               <span>Total</span><span className="text-primary">{formatNGN(total)}</span>
             </div>
+            {pointsEarned > 0 && (
+              <div className="flex items-center gap-1 text-xs text-accent">
+                <Star className="h-3 w-3" /> You'll earn {pointsEarned} points
+              </div>
+            )}
           </div>
-          <button
-            disabled={!canSubmit || loading}
-            onClick={placeOrder}
-            className="mt-2 w-full rounded-full bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-soft transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <button disabled={!canSubmit || loading} onClick={placeOrder}
+            className="mt-2 w-full rounded-full bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-soft transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50">
             {loading ? "Placing order…" : "Place order"}
           </button>
           <p className="text-center text-xs text-muted-foreground">Payment via bank transfer on next step.</p>
+          {!user && (
+            <Link to="/login" className="block text-center text-xs text-primary hover:underline">
+              Sign in to earn loyalty points →
+            </Link>
+          )}
         </div>
       </div>
 

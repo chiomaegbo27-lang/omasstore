@@ -14,6 +14,207 @@ export type Database = {
   }
   public: {
     Tables: {
+      delivery_locations: {
+        Row: {
+          created_at: string
+          estimated_time: string
+          fee: number
+          id: string
+          name: string
+          zone: string
+        }
+        Insert: {
+          created_at?: string
+          estimated_time?: string
+          fee?: number
+          id?: string
+          name: string
+          zone: string
+        }
+        Update: {
+          created_at?: string
+          estimated_time?: string
+          fee?: number
+          id?: string
+          name?: string
+          zone?: string
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string | null
+          points: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          points: number
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          points?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          meal_id: string
+          name: string
+          price: number
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          meal_id: string
+          name: string
+          price?: number
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          meal_id?: string
+          name?: string
+          price?: number
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_ingredients_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_orders: {
+        Row: {
+          address: string | null
+          cooking_fee: number
+          created_at: string
+          customer_name: string
+          delivery_fee: number
+          id: string
+          ingredients_cost: number
+          meal_id: string
+          packaging_fee: number
+          phone: string
+          selected_ingredients: Json
+          status: string
+          total: number
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          cooking_fee?: number
+          created_at?: string
+          customer_name: string
+          delivery_fee?: number
+          id?: string
+          ingredients_cost?: number
+          meal_id: string
+          packaging_fee?: number
+          phone: string
+          selected_ingredients?: Json
+          status?: string
+          total?: number
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          cooking_fee?: number
+          created_at?: string
+          customer_name?: string
+          delivery_fee?: number
+          id?: string
+          ingredients_cost?: number
+          meal_id?: string
+          packaging_fee?: number
+          phone?: string
+          selected_ingredients?: Json
+          status?: string
+          total?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_orders_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meals: {
+        Row: {
+          base_price: number
+          cooking_fee: number
+          created_at: string
+          description: string | null
+          emoji: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean
+          name: string
+          packaging_fee: number
+        }
+        Insert: {
+          base_price?: number
+          cooking_fee?: number
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name: string
+          packaging_fee?: number
+        }
+        Update: {
+          base_price?: number
+          cooking_fee?: number
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name?: string
+          packaging_fee?: number
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           address: string | null
@@ -24,9 +225,12 @@ export type Database = {
           id: string
           items: Json
           phone: string
+          points_earned: number
+          points_used: number
           status: string
           subtotal: number
           total: number
+          user_id: string | null
           zone: string | null
         }
         Insert: {
@@ -38,9 +242,12 @@ export type Database = {
           id?: string
           items: Json
           phone: string
+          points_earned?: number
+          points_used?: number
           status?: string
           subtotal: number
           total: number
+          user_id?: string | null
           zone?: string | null
         }
         Update: {
@@ -52,17 +259,22 @@ export type Database = {
           id?: string
           items?: Json
           phone?: string
+          points_earned?: number
+          points_used?: number
           status?: string
           subtotal?: number
           total?: number
+          user_id?: string | null
           zone?: string | null
         }
         Relationships: []
       }
       products: {
         Row: {
+          aroma: string | null
           brand: string | null
           category: string
+          cooking_notes: string | null
           created_at: string
           description: string | null
           emoji: string | null
@@ -70,14 +282,21 @@ export type Database = {
           image_url: string | null
           in_stock: boolean
           name: string
+          origin: string | null
           price: number
+          pricing_unit: string | null
+          quality_level: string | null
           stock: number
           subcategory: string | null
+          taste: string | null
+          texture: string | null
           unit: string | null
         }
         Insert: {
+          aroma?: string | null
           brand?: string | null
           category: string
+          cooking_notes?: string | null
           created_at?: string
           description?: string | null
           emoji?: string | null
@@ -85,14 +304,21 @@ export type Database = {
           image_url?: string | null
           in_stock?: boolean
           name: string
+          origin?: string | null
           price: number
+          pricing_unit?: string | null
+          quality_level?: string | null
           stock?: number
           subcategory?: string | null
+          taste?: string | null
+          texture?: string | null
           unit?: string | null
         }
         Update: {
+          aroma?: string | null
           brand?: string | null
           category?: string
+          cooking_notes?: string | null
           created_at?: string
           description?: string | null
           emoji?: string | null
@@ -100,10 +326,96 @@ export type Database = {
           image_url?: string | null
           in_stock?: boolean
           name?: string
+          origin?: string | null
           price?: number
+          pricing_unit?: string | null
+          quality_level?: string | null
           stock?: number
           subcategory?: string | null
+          taste?: string | null
+          texture?: string | null
           unit?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          loyalty_points: number
+          phone: string | null
+          referral_code: string | null
+          referred_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          loyalty_points?: number
+          phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          loyalty_points?: number
+          phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          bonus_awarded: boolean
+          created_at: string
+          id: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          bonus_awarded?: boolean
+          created_at?: string
+          id?: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          bonus_awarded?: boolean
+          created_at?: string
+          id?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -112,10 +424,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -242,6 +560,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

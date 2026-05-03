@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Truck, ShieldCheck, Clock } from "lucide-react";
+import { ArrowRight, Truck, ShieldCheck, Clock, ChefHat, Star } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard, type Product } from "@/components/ProductCard";
@@ -41,9 +41,9 @@ function Home() {
               <Link to="/shop" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 active:scale-95">
                 Shop Now <ArrowRight className="h-4 w-4" />
               </Link>
-              <a href={`https://wa.me/${STORE.whatsapp}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold hover:bg-muted">
-                Chat on WhatsApp
-              </a>
+              <Link to="/meals" className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold hover:bg-muted">
+                <ChefHat className="h-4 w-4" /> Order a Meal
+              </Link>
             </div>
           </div>
           <div className="relative">
@@ -55,11 +55,12 @@ function Home() {
 
       {/* Trust strip */}
       <section className="border-y border-border bg-background">
-        <div className="container mx-auto grid max-w-6xl grid-cols-3 gap-2 px-4 py-5 text-center text-xs sm:text-sm">
+        <div className="container mx-auto grid max-w-6xl grid-cols-4 gap-2 px-4 py-5 text-center text-xs sm:text-sm">
           {[
-            { icon: Truck, t: "Fast delivery", s: "From ₦500" },
+            { icon: Truck, t: "Fast delivery", s: "From ₦300" },
             { icon: ShieldCheck, t: "Genuine items", s: "Quality guaranteed" },
             { icon: Clock, t: "Open daily", s: "8am – 8pm" },
+            { icon: Star, t: "Earn points", s: "On every order" },
           ].map(({ icon: I, t, s }) => (
             <div key={t} className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-center sm:gap-2">
               <I className="h-5 w-5 text-primary" />
@@ -80,6 +81,18 @@ function Home() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4">
           {featured.map((p) => <ProductCard key={p.id} p={p} />)}
+        </div>
+      </section>
+
+      {/* Meals CTA */}
+      <section className="bg-gradient-to-br from-pink-soft to-blue-soft">
+        <div className="container mx-auto max-w-6xl px-4 py-12 text-center md:py-16">
+          <ChefHat className="mx-auto h-10 w-10 text-accent mb-3" />
+          <h2 className="font-display text-2xl font-bold md:text-3xl">Can't cook? Let us do it!</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">Choose a meal, pick your ingredients, and we'll prepare it fresh. Pickup or delivery!</p>
+          <Link to="/meals" className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-white shadow-soft hover:opacity-95">
+            Order a Custom Meal <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
     </div>
