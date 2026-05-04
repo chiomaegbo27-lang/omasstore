@@ -120,7 +120,7 @@ function Shop() {
                                 </button>
                                 {brandOpen && (
                                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                                    {list.map((p) => <ProductCard key={p.id} p={p} />)}
+                                    {list.map((p, i) => <ProductCard key={p.id} p={p} index={i} />)}
                                   </div>
                                 )}
                               </div>

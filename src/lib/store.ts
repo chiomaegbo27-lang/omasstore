@@ -1,8 +1,8 @@
-// Store config + cart state (zustand-free, simple React context lives in CartProvider)
 export const STORE = {
   name: "Oma's Store",
   tagline: "Fresh groceries & household essentials, delivered to your door in Enugu.",
-  whatsapp: "2349065869280", // no +
+  whatsapp: "2349065869280",
+  phone: "+2349065869280",
   adminEmail: "Chiomaegbo27@gmail.com",
   bank: {
     accountName: "Chioma Egbo",
