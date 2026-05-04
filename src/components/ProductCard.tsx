@@ -17,7 +17,7 @@ export interface Product {
   brand?: string | null;
 }
 
-export function ProductCard({ p }: { p: Product }) {
+export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
   const { add, setQty, items } = useCart();
   const inCart = items.find((i) => i.id === p.id);
   const qty = inCart?.qty ?? 0;
@@ -28,6 +28,7 @@ export function ProductCard({ p }: { p: Product }) {
     if (remaining <= 0) { toast.error("No more stock available"); return; }
     if (qty === 0) {
       add({ id: p.id, name: p.name, price: p.price, emoji: p.emoji, unit: p.unit });
+      toast.success(`${p.name} added to cart! 🛒`, { duration: 1500 });
     } else {
       setQty(p.id, qty + 1);
     }
@@ -35,9 +36,12 @@ export function ProductCard({ p }: { p: Product }) {
   const dec = () => setQty(p.id, qty - 1);
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:-translate-y-0.5 hover:shadow-soft">
-      <div className="relative grid aspect-square place-items-center bg-gradient-to-br from-pink-soft to-blue-soft text-6xl">
-        <span aria-hidden>{p.emoji ?? "🛒"}</span>
+    <div
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-soft animate-fade-in"
+      style={{ animationDelay: `${Math.min(index * 60, 600)}ms`, animationFillMode: "both" }}
+    >
+      <div className="relative grid aspect-square place-items-center bg-gradient-to-br from-pink-soft to-blue-soft text-6xl overflow-hidden">
+        <span aria-hidden className="transition-transform duration-300 group-hover:scale-110">{p.emoji ?? "🛒"}</span>
         <span className="absolute left-2 top-2 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur">
           {p.category}
         </span>
@@ -64,7 +68,7 @@ export function ProductCard({ p }: { p: Product }) {
           ) : qty === 0 ? (
             <button
               onClick={inc}
-              className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground shadow-sm transition hover:opacity-90 active:scale-95"
+              className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground shadow-sm transition-all duration-200 hover:scale-105 hover:opacity-90 active:scale-95"
             >
               <Plus className="h-3.5 w-3.5" /> Add
             </button>
@@ -73,7 +77,7 @@ export function ProductCard({ p }: { p: Product }) {
               <button
                 onClick={dec}
                 aria-label="Decrease quantity"
-                className="grid h-7 w-7 place-items-center rounded-full bg-card text-foreground shadow-sm transition active:scale-90"
+                className="grid h-7 w-7 place-items-center rounded-full bg-card text-foreground shadow-sm transition-all duration-200 active:scale-90"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
@@ -82,7 +86,7 @@ export function ProductCard({ p }: { p: Product }) {
                 onClick={inc}
                 disabled={remaining <= 0}
                 aria-label="Increase quantity"
-                className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm transition active:scale-90 disabled:opacity-40"
+                className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm transition-all duration-200 active:scale-90 disabled:opacity-40"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
