@@ -83,7 +83,7 @@ function Checkout() {
       user_id: user?.id ?? null,
       items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
     };
-    const { data, error } = await supabase.from("orders").insert(payload).select("id").single();
+    const { data, error } = await supabase.from("orders").insert(payload).select("id").maybeSingle();
     setLoading(false);
     if (error || !data) {
       toast.error("Could not place order. Please try again.");

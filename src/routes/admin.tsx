@@ -116,7 +116,7 @@ function AdminPage() {
     if (!editingProduct || !editingProduct.name || !editingProduct.category) {
       toast.error("Name and category are required"); return;
     }
-    const { isNew, id, ...data } = editingProduct as any;
+    const { isNew, id, created_at, ...data } = editingProduct as any;
     if (isNew) {
       const { error } = await supabase.from("products").insert(data);
       if (error) { toast.error(error.message); return; }
