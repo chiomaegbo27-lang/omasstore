@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, Copy, MessageCircle, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { STORE, formatNGN, ZONES, type Zone } from "@/lib/store";
+import { STORE, formatNGN } from "@/lib/store";
 import { OrderProgress, type OrderStatus } from "@/components/OrderProgress";
 import { toast } from "sonner";
 
@@ -43,7 +43,7 @@ function OrderPage() {
 
   const itemsText = order.items.map((i) => `• ${i.name} × ${i.qty} — ${formatNGN(i.price * i.qty)}`).join("\n");
   const fulfillmentText = order.fulfillment === "delivery"
-    ? `Delivery (${ZONES[order.zone as Zone]?.label.split("—")[0].trim()})\nAddress: ${order.address}`
+    ? `Delivery (${order.zone ?? ""})\nAddress: ${order.address}`
     : "Pickup at store";
 
   const waMessage =
@@ -123,7 +123,7 @@ I will send proof of payment shortly. Thank you!`;
             <div key={i.id} className="flex justify-between"><span className="text-muted-foreground">{i.name} × {i.qty}</span><span>{formatNGN(i.price * i.qty)}</span></div>
           ))}
           <div className="mt-2 flex justify-between border-t border-border pt-2 text-muted-foreground"><span>Subtotal</span><span>{formatNGN(order.subtotal)}</span></div>
-          <div className="flex justify-between text-muted-foreground"><span>{order.fulfillment === "delivery" ? `Delivery (Zone ${order.zone})` : "Pickup"}</span><span>{formatNGN(order.delivery_fee)}</span></div>
+          <div className="flex justify-between text-muted-foreground"><span>{order.fulfillment === "delivery" ? `Delivery (${order.zone ?? ""})` : "Pickup"}</span><span>{formatNGN(order.delivery_fee)}</span></div>
           <div className="flex justify-between border-t border-border pt-2 text-base font-bold"><span>Total</span><span className="text-primary">{formatNGN(order.total)}</span></div>
         </div>
         <div className="mt-3 text-xs text-muted-foreground">
