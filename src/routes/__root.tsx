@@ -81,5 +81,6 @@ function RootComponent() {
         <Toaster position="top-center" />
       </div>
     </CartProvider>
+    </AuthProvider>
   );
 }
