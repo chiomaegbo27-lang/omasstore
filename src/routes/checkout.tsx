@@ -126,7 +126,7 @@ function Checkout() {
                 <select value={locationId} onChange={(e) => setLocationId(e.target.value)} className="input">
                   <option value="">Select your area</option>
                   {locations.map((l) => (
-                    <option key={l.id} value={l.id}>{l.name} — {formatNGN(l.fee)} ({l.estimated_time})</option>
+                    <option key={l.id} value={l.id}>{l.name} • {l.zone} — {formatNGN(l.fee)} ({l.estimated_time})</option>
                   ))}
                 </select>
               </Field>
