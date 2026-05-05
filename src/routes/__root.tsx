@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { CartProvider } from "@/lib/cart";
+import { AuthProvider } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { Toaster } from "@/components/ui/sonner";
@@ -66,6 +67,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
+    <AuthProvider>
     <CartProvider>
       <div className="flex min-h-screen flex-col">
         <Header />
@@ -79,5 +81,6 @@ function RootComponent() {
         <Toaster position="top-center" />
       </div>
     </CartProvider>
+    </AuthProvider>
   );
 }
