@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { CartProvider } from "@/lib/cart";
+import { AuthProvider } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { Toaster } from "@/components/ui/sonner";
