@@ -83,11 +83,25 @@ function Checkout() {
       user_id: user?.id ?? null,
       items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
     };
-    const { data, error } = await supabase.from("orders").insert(payload).select("id").maybeSingle();
-    setLoading(false);
-    if (error || !data) {
-      toast.error("Could not place order. Please try again.");
-      return;
+    try {
+      const { data, error } = await supabase.from("orders").insert(payload).select("id").maybeSingle();
+      setLoading(false);
+      if (error) {
+        console.error("Order insert error:", error);
+        toast.error(error.message || "Could not place order. Please try again.");
+        return;
+      }
+      if (!data) {
+        toast.error("Order was placed but could not retrieve confirmation. Check WhatsApp.");
+        clear();
+        return;
+      }
+      clear();
+      navigate({ to: "/order/$id", params: { id: data.id } });
+    } catch (e: any) {
+      setLoading(false);
+      console.error("Order exception:", e);
+      toast.error(e?.message || "Something went wrong. Please try again.");
     }
     clear();
     navigate({ to: "/order/$id", params: { id: data.id } });
