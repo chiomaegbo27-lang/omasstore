@@ -80,29 +80,42 @@ function MealsPage() {
   };
 
   const handleOrder = async () => {
-    if (!meal || !name.trim() || !phone.trim()) return;
+    if (!meal || !name.trim() || !phone.trim() || Object.keys(selectedIngredients).length === 0) {
+      toast.error("Please fill all required fields and select at least one ingredient.");
+      return;
+    }
     setLoading(true);
     const selIngList = Object.entries(selectedIngredients).map(([id, qty]) => {
       const ing = ingredients.find((i) => i.id === id)!;
       return { id, name: ing.name, price: ing.price, qty, unit: ing.unit };
     });
 
-    const { error } = await supabase.from("meal_orders").insert({
-      user_id: user?.id ?? null,
-      customer_name: name.trim(),
-      phone: phone.trim(),
-      meal_id: meal.id,
-      selected_ingredients: selIngList,
-      ingredients_cost: ingredientsCost,
-      cooking_fee: meal.cooking_fee,
-      packaging_fee: meal.packaging_fee,
-      delivery_fee: deliveryFee,
-      total,
-      address: wantDelivery ? address.trim() : null,
-    });
-    setLoading(false);
-    if (error) { toast.error("Failed to place order"); return; }
-    setSubmitted(true);
+    try {
+      const { error } = await supabase.from("meal_orders").insert({
+        user_id: user?.id ?? null,
+        customer_name: name.trim(),
+        phone: phone.trim(),
+        meal_id: meal.id,
+        selected_ingredients: selIngList,
+        ingredients_cost: ingredientsCost,
+        cooking_fee: meal.cooking_fee,
+        packaging_fee: meal.packaging_fee,
+        delivery_fee: deliveryFee,
+        total,
+        address: wantDelivery ? address.trim() : null,
+      });
+      setLoading(false);
+      if (error) {
+        console.error("Meal order error:", error);
+        toast.error(error.message || "Failed to place order");
+        return;
+      }
+      setSubmitted(true);
+    } catch (e: any) {
+      setLoading(false);
+      console.error("Meal order exception:", e);
+      toast.error(e?.message || "Something went wrong");
+    }
   };
 
   const waMessage = meal ? `Hello ${STORE.name}, I'd like to order a custom meal:\n\n🍲 ${meal.name}\n👤 ${name}\n📱 ${phone}\n\nIngredients:\n${Object.entries(selectedIngredients).map(([id, qty]) => {
