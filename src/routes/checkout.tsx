@@ -103,8 +103,7 @@ function Checkout() {
       console.error("Order exception:", e);
       toast.error(e?.message || "Something went wrong. Please try again.");
     }
-    clear();
-    navigate({ to: "/order/$id", params: { id: data.id } });
+  
   }
 
   return (
