@@ -1,4 +1,5 @@
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, Play, X } from "lucide-react";
+import { useState } from "react";
 import { useCart } from "@/lib/cart";
 import { formatNGN } from "@/lib/store";
 import { toast } from "sonner";
@@ -15,10 +16,13 @@ export interface Product {
   unit: string | null;
   subcategory?: string | null;
   brand?: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
 }
 
 export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
   const { add, setQty, items } = useCart();
+  const [showVideo, setShowVideo] = useState(false);
   const inCart = items.find((i) => i.id === p.id);
   const qty = inCart?.qty ?? 0;
   const soldOut = !p.in_stock || p.stock <= 0;
@@ -36,15 +40,32 @@ export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
   const dec = () => setQty(p.id, qty - 1);
 
   return (
+    <>
     <div
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-soft animate-fade-in"
       style={{ animationDelay: `${Math.min(index * 60, 600)}ms`, animationFillMode: "both" }}
     >
-      <div className="relative grid aspect-square place-items-center bg-gradient-to-br from-pink-soft to-blue-soft text-6xl overflow-hidden">
-        <span aria-hidden className="transition-transform duration-300 group-hover:scale-110">{p.emoji ?? "🛒"}</span>
+      <button
+        type="button"
+        onClick={() => p.video_url && setShowVideo(true)}
+        className="relative grid aspect-square place-items-center bg-gradient-to-br from-pink-soft to-blue-soft overflow-hidden text-left"
+        aria-label={p.video_url ? `Watch ${p.name} advert` : p.name}
+      >
+        {p.image_url ? (
+          <img src={p.image_url} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+        ) : (
+          <span aria-hidden className="text-6xl transition-transform duration-300 group-hover:scale-110">{p.emoji ?? "🛒"}</span>
+        )}
         <span className="absolute left-2 top-2 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur">
           {p.category}
         </span>
+        {p.video_url && (
+          <span className="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/30 transition">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-primary opacity-0 group-hover:opacity-100 transition shadow-glow">
+              <Play className="h-5 w-5 ml-0.5" />
+            </span>
+          </span>
+        )}
         {soldOut ? (
           <span className="absolute right-2 top-2 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">
             Sold out
@@ -54,7 +75,7 @@ export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
             Only {p.stock} left
           </span>
         ) : null}
-      </div>
+      </button>
       <div className="flex flex-1 flex-col gap-2 p-3">
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{p.name}</h3>
         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -95,5 +116,22 @@ export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
         </div>
       </div>
     </div>
+
+    {showVideo && p.video_url && (
+      <div className="fixed inset-0 z-[60] grid place-items-center bg-black/80 p-4 animate-fade-in" onClick={() => setShowVideo(false)}>
+        <div className="relative w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => setShowVideo(false)}
+            className="absolute -top-12 right-0 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-foreground shadow"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <video src={p.video_url} controls autoPlay className="w-full rounded-2xl shadow-glow" />
+          <p className="mt-3 text-center text-sm font-semibold text-white">{p.name}{p.brand ? ` — ${p.brand}` : ""}</p>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

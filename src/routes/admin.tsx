@@ -30,6 +30,7 @@ type ProductRow = {
   id: string; name: string; description: string | null; price: number; category: string;
   emoji: string | null; in_stock: boolean; stock: number; unit: string | null;
   subcategory: string | null; brand: string | null; image_url: string | null;
+  video_url: string | null;
   texture: string | null; taste: string | null; aroma: string | null;
   cooking_notes: string | null; origin: string | null; pricing_unit: string | null;
 };
@@ -37,9 +38,17 @@ type ProductRow = {
 const emptyProduct: Omit<ProductRow, "id"> = {
   name: "", description: "", price: 0, category: "", emoji: "🛒",
   in_stock: true, stock: 20, unit: null, subcategory: null, brand: null,
-  image_url: null, texture: null, taste: null, aroma: null,
+  image_url: null, video_url: null, texture: null, taste: null, aroma: null,
   cooking_notes: null, origin: null, pricing_unit: null,
 };
+
+async function uploadFile(bucket: string, file: File): Promise<string | null> {
+  const ext = file.name.split(".").pop() || "bin";
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
+  if (error) { toast.error(error.message); return null; }
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
 
 function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -328,6 +337,35 @@ function AdminPage() {
                   <PField label="Taste" value={editingProduct.taste ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, taste: v || null })} placeholder="e.g. Sweet, Savoury" />
                   <PField label="Aroma" value={editingProduct.aroma ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, aroma: v || null })} placeholder="e.g. Rich, Smoky" />
                   <PField label="Texture" value={editingProduct.texture ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, texture: v || null })} placeholder="e.g. Smooth, Crunchy" />
+
+                  {/* Product image upload */}
+                  <div>
+                    <span className="mb-1 block text-xs font-semibold text-muted-foreground">Product Image</span>
+                    {editingProduct.image_url && (
+                      <img src={editingProduct.image_url} alt="preview" className="mb-2 h-24 w-24 rounded-lg object-cover border border-border" />
+                    )}
+                    <input type="file" accept="image/*" onChange={async (e) => {
+                      const f = e.target.files?.[0]; if (!f) return;
+                      const url = await uploadFile("product-images", f);
+                      if (url) { setEditingProduct({ ...editingProduct, image_url: url }); toast.success("Image uploaded"); }
+                    }} className="block w-full text-xs" />
+                  </div>
+
+                  {/* Brand advert video upload */}
+                  <div>
+                    <span className="mb-1 block text-xs font-semibold text-muted-foreground">Brand Advert Video (optional)</span>
+                    {editingProduct.video_url && (
+                      <video src={editingProduct.video_url} className="mb-2 h-24 rounded-lg border border-border" controls />
+                    )}
+                    <input type="file" accept="video/*" onChange={async (e) => {
+                      const f = e.target.files?.[0]; if (!f) return;
+                      if (f.size > 50 * 1024 * 1024) { toast.error("Video must be under 50MB"); return; }
+                      toast.info("Uploading video…");
+                      const url = await uploadFile("product-videos", f);
+                      if (url) { setEditingProduct({ ...editingProduct, video_url: url }); toast.success("Video uploaded"); }
+                    }} className="block w-full text-xs" />
+                  </div>
+
                   <div className="flex items-center gap-2">
                     <input type="checkbox" checked={editingProduct.in_stock ?? true} onChange={(e) => setEditingProduct({ ...editingProduct, in_stock: e.target.checked })} className="accent-primary" />
                     <span className="text-sm">In stock</span>

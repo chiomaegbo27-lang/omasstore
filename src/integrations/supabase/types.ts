@@ -291,6 +291,7 @@ export type Database = {
           taste: string | null
           texture: string | null
           unit: string | null
+          video_url: string | null
         }
         Insert: {
           aroma?: string | null
@@ -313,6 +314,7 @@ export type Database = {
           taste?: string | null
           texture?: string | null
           unit?: string | null
+          video_url?: string | null
         }
         Update: {
           aroma?: string | null
@@ -335,6 +337,7 @@ export type Database = {
           taste?: string | null
           texture?: string | null
           unit?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }
