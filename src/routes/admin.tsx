@@ -30,6 +30,7 @@ type ProductRow = {
   id: string; name: string; description: string | null; price: number; category: string;
   emoji: string | null; in_stock: boolean; stock: number; unit: string | null;
   subcategory: string | null; brand: string | null; image_url: string | null;
+  video_url: string | null;
   texture: string | null; taste: string | null; aroma: string | null;
   cooking_notes: string | null; origin: string | null; pricing_unit: string | null;
 };
@@ -37,9 +38,17 @@ type ProductRow = {
 const emptyProduct: Omit<ProductRow, "id"> = {
   name: "", description: "", price: 0, category: "", emoji: "🛒",
   in_stock: true, stock: 20, unit: null, subcategory: null, brand: null,
-  image_url: null, texture: null, taste: null, aroma: null,
+  image_url: null, video_url: null, texture: null, taste: null, aroma: null,
   cooking_notes: null, origin: null, pricing_unit: null,
 };
+
+async function uploadFile(bucket: string, file: File): Promise<string | null> {
+  const ext = file.name.split(".").pop() || "bin";
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
+  if (error) { toast.error(error.message); return null; }
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
 
 function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
