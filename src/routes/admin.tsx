@@ -5,9 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatNGN, STORE } from "@/lib/store";
 import { toast } from "sonner";
 import {
-  ShoppingCart, Users, Package, TrendingUp, ChevronDown,
-  Truck, CheckCircle2, Clock, ChefHat, Star, RefreshCw,
-  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar
+  ShoppingCart, Users, Package, TrendingUp,
+  Truck, CheckCircle2, Clock, Star, RefreshCw,
+  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar, MessageSquare
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
