@@ -33,13 +33,14 @@ type ProductRow = {
   video_url: string | null;
   texture: string | null; taste: string | null; aroma: string | null;
   cooking_notes: string | null; origin: string | null; pricing_unit: string | null;
+  quality_level: string | null;
 };
 
 const emptyProduct: Omit<ProductRow, "id"> = {
   name: "", description: "", price: 0, category: "", emoji: "🛒",
   in_stock: true, stock: 20, unit: null, subcategory: null, brand: null,
   image_url: null, video_url: null, texture: null, taste: null, aroma: null,
-  cooking_notes: null, origin: null, pricing_unit: null,
+  cooking_notes: null, origin: null, pricing_unit: null, quality_level: null,
 };
 
 async function uploadFile(bucket: string, file: File): Promise<string | null> {
