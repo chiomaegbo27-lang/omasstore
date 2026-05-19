@@ -407,6 +407,9 @@ function AdminPage() {
                   <PField label="Taste" value={editingProduct.taste ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, taste: v || null })} placeholder="e.g. Sweet, Savoury" />
                   <PField label="Aroma" value={editingProduct.aroma ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, aroma: v || null })} placeholder="e.g. Rich, Smoky" />
                   <PField label="Texture" value={editingProduct.texture ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, texture: v || null })} placeholder="e.g. Smooth, Crunchy" />
+                  <PField label="Origin" value={editingProduct.origin ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, origin: v || null })} placeholder="e.g. Abakaliki, Foreign" />
+                  <PField label="Cooking notes" value={editingProduct.cooking_notes ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, cooking_notes: v || null })} placeholder="e.g. Cook for 30 mins" />
+                  <PField label="Quality level" value={editingProduct.quality_level ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, quality_level: v || null })} placeholder="e.g. Premium, Standard" />
 
                   {/* Product image upload */}
                   <div>
