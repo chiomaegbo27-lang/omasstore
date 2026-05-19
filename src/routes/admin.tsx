@@ -161,11 +161,59 @@ function AdminPage() {
   };
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Delete this product?")) return;
+    if (!confirm("Delete this product? Its variants will also be removed.")) return;
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Product deleted");
     loadData();
+  };
+
+  const addVariant = async (productId: string) => {
+    const unit = prompt("Unit (e.g. cup, bag, painter, sachet, 75cl bottle, piece, tuber)")?.trim();
+    if (!unit) return;
+    const measurement = prompt("Measurement label (optional, e.g. 75cl, 50kg) — leave blank to skip")?.trim() || null;
+    const priceStr = prompt("Price in ₦")?.trim();
+    if (!priceStr) return;
+    const price = Number(priceStr);
+    if (!Number.isFinite(price) || price < 0) { toast.error("Invalid price"); return; }
+    const stockStr = prompt("Stock available")?.trim() || "0";
+    const stock = Math.max(0, Math.floor(Number(stockStr) || 0));
+    const existing = variantsByProduct[productId] ?? [];
+    const sort_order = existing.length;
+    const is_default = existing.length === 0;
+    const { error } = await supabase.from("product_variants").insert({
+      product_id: productId, unit, measurement, price, stock, is_default, sort_order,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Variant added");
+    loadData();
+  };
+
+  const updateVariant = async (id: string, patch: Partial<VariantRow>) => {
+    const { error } = await supabase.from("product_variants").update(patch).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    loadData();
+  };
+
+  const deleteVariant = async (id: string) => {
+    if (!confirm("Delete this variant?")) return;
+    const { error } = await supabase.from("product_variants").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Variant deleted");
+    loadData();
+  };
+
+  const setReviewApproved = async (id: string, is_approved: boolean) => {
+    const { error } = await supabase.from("reviews").update({ is_approved }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setReviews((p) => p.map((r) => r.id === id ? { ...r, is_approved } : r));
+  };
+  const deleteReview = async (id: string) => {
+    if (!confirm("Delete this review?")) return;
+    const { error } = await supabase.from("reviews").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setReviews((p) => p.filter((r) => r.id !== id));
+    toast.success("Review deleted");
   };
 
   if (authLoading) return <div className="container mx-auto px-4 py-16 text-center text-muted-foreground animate-fade-in">Loading…</div>;
