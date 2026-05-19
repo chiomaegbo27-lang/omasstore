@@ -269,6 +269,53 @@ export type Database = {
         }
         Relationships: []
       }
+      product_variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          measurement: string | null
+          price: number
+          product_id: string
+          sort_order: number
+          stock: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          measurement?: string | null
+          price?: number
+          product_id: string
+          sort_order?: number
+          stock?: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          measurement?: string | null
+          price?: number
+          product_id?: string
+          sort_order?: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           aroma: string | null
@@ -403,6 +450,47 @@ export type Database = {
           referrer_id?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          customer_name: string
+          id: string
+          is_approved: boolean
+          product_id: string | null
+          rating: number
+          user_id: string | null
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          customer_name: string
+          id?: string
+          is_approved?: boolean
+          product_id?: string | null
+          rating: number
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          is_approved?: boolean
+          product_id?: string | null
+          rating?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
