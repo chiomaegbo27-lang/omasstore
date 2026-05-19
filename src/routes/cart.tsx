@@ -32,13 +32,16 @@ function CartPage() {
       <div className="space-y-3">
         {items.map((i) => (
           <div key={i.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-card">
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-pink-soft to-blue-soft text-3xl">
-              {i.emoji ?? "🛒"}
+            <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-pink-soft to-blue-soft text-3xl">
+              {i.image_url ? <img src={i.image_url} alt={i.name} className="h-full w-full object-cover" /> : (i.emoji ?? "🛒")}
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{i.name}</div>
               <div className="text-sm text-primary">
-                {formatNGN(i.price)}{i.unit ? <span className="text-xs text-muted-foreground"> / {i.unit}</span> : null}
+                {formatNGN(i.price)}
+                {(i.measurement || i.unit) && (
+                  <span className="text-xs text-muted-foreground"> / {i.measurement ? `${i.measurement} ` : ""}{i.unit}</span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-1 rounded-full border border-border">
