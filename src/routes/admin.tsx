@@ -280,6 +280,7 @@ function AdminPage() {
           { key: "meals" as const, label: "🍲 Meals" },
           { key: "customers" as const, label: "👥 Customers" },
           { key: "products" as const, label: "📋 Products" },
+          { key: "reviews" as const, label: "⭐ Reviews" },
           { key: "sales" as const, label: "📊 Sales" },
         ]).map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
