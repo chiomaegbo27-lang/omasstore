@@ -1,11 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export interface CartItem {
+  /** Composite cart-line key: `${productId}:${variantId ?? "default"}` */
   id: string;
+  productId: string;
+  variantId?: string | null;
   name: string;
   price: number;
   emoji?: string | null;
   unit?: string | null;
+  measurement?: string | null;
+  image_url?: string | null;
   qty: number;
 }
 
@@ -20,7 +25,7 @@ interface CartCtx {
 }
 
 const Ctx = createContext<CartCtx | null>(null);
-const KEY = "omas-cart-v1";
+const KEY = "omas-cart-v2";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -61,3 +66,6 @@ export function useCart() {
   if (!c) throw new Error("useCart must be used inside CartProvider");
   return c;
 }
+
+export const cartLineId = (productId: string, variantId?: string | null) =>
+  `${productId}:${variantId ?? "default"}`;
