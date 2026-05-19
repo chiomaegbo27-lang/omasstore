@@ -450,26 +450,101 @@ function AdminPage() {
             </div>
           )}
 
-          {/* Product list */}
-          <div className="space-y-2">
-            {products.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-card transition hover:shadow-soft">
-                <span className="text-2xl">{p.emoji ?? "🛒"}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm truncate">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{p.category}{p.subcategory ? ` > ${p.subcategory}` : ""}{p.brand ? ` > ${p.brand}` : ""} • {formatNGN(p.price)} • Stock: {p.stock}</div>
+          {/* Product list with inline variants */}
+          <div className="space-y-3">
+            {products.map((p) => {
+              const vs = variantsByProduct[p.id] ?? [];
+              return (
+                <div key={p.id} className="rounded-2xl border border-border bg-card p-3 shadow-card transition hover:shadow-soft">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{p.emoji ?? "🛒"}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm truncate">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">{p.category}{p.brand ? ` › ${p.brand}` : ""}{p.subcategory ? ` › ${p.subcategory}` : ""} {vs.length === 0 ? `• ${formatNGN(p.price)} • Stock: ${p.stock}` : `• ${vs.length} variant${vs.length > 1 ? "s" : ""}`}</div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => setEditingProduct(p)} title="Edit product" className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => deleteProduct(p.id)} title="Delete product" className="grid h-8 w-8 place-items-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition active:scale-95">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Variants */}
+                  <div className="mt-3 rounded-xl bg-muted/30 p-2">
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase">Units & prices</span>
+                      <button onClick={() => addVariant(p.id)} className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-95 active:scale-95">
+                        <Plus className="h-3 w-3" /> Add unit
+                      </button>
+                    </div>
+                    {vs.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground italic">No variants — uses the product price/stock above. Add units like cup, bag, painter, 75cl bottle, sachet, piece, tuber, etc.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {vs.map((v) => (
+                          <div key={v.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+                            <input defaultValue={v.measurement ?? ""} placeholder="size (75cl)" onBlur={(e) => { const val = e.target.value.trim() || null; if (val !== v.measurement) updateVariant(v.id, { measurement: val }); }} className="w-20 rounded-md border border-border bg-background px-1.5 py-1" />
+                            <input defaultValue={v.unit} onBlur={(e) => { const val = e.target.value.trim(); if (val && val !== v.unit) updateVariant(v.id, { unit: val }); }} className="w-24 rounded-md border border-border bg-background px-1.5 py-1 font-semibold" />
+                            <span className="text-muted-foreground">₦</span>
+                            <input type="number" defaultValue={v.price} onBlur={(e) => { const val = Number(e.target.value); if (Number.isFinite(val) && val !== Number(v.price)) updateVariant(v.id, { price: val }); }} className="w-24 rounded-md border border-border bg-background px-1.5 py-1" />
+                            <span className="text-muted-foreground">stock</span>
+                            <input type="number" defaultValue={v.stock} onBlur={(e) => { const val = Math.max(0, Math.floor(Number(e.target.value) || 0)); if (val !== v.stock) updateVariant(v.id, { stock: val }); }} className="w-16 rounded-md border border-border bg-background px-1.5 py-1" />
+                            <label className="inline-flex items-center gap-1 text-[11px]">
+                              <input type="checkbox" defaultChecked={v.is_default} onChange={(e) => updateVariant(v.id, { is_default: e.target.checked })} className="accent-primary" />
+                              default
+                            </label>
+                            <button onClick={() => deleteVariant(v.id)} className="ml-auto grid h-7 w-7 place-items-center rounded-md text-destructive hover:bg-destructive/10">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                        <p className="text-[10px] text-muted-foreground italic mt-1">Edits save when you click out of the field.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-1.5">
-                  <button onClick={() => setEditingProduct(p)} className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button onClick={() => deleteProduct(p.id)} className="grid h-8 w-8 place-items-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition active:scale-95">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Reviews tab */}
+      {tab === "reviews" && (
+        <div className="space-y-3">
+          {reviews.length === 0 ? <p className="text-center text-muted-foreground py-8">No reviews yet.</p> : reviews.map((r) => (
+            <div key={r.id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="font-semibold text-sm">{r.customer_name}</span>
+                  {r.products?.name && <span className="text-xs text-muted-foreground"> · {r.products.name}</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map((n) => (
+                      <Star key={n} className={`h-3.5 w-3.5 ${n <= r.rating ? "fill-accent text-accent" : "text-muted-foreground/30"}`} />
+                    ))}
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${r.is_approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                    {r.is_approved ? "approved" : "hidden"}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
+              <p className="mt-2 text-sm">{r.comment}</p>
+              <div className="mt-2 text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</div>
+              <div className="mt-3 flex gap-2">
+                <button onClick={() => setReviewApproved(r.id, !r.is_approved)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+                  <MessageSquare className="inline h-3 w-3 mr-1" /> {r.is_approved ? "Hide" : "Approve"}
+                </button>
+                <button onClick={() => deleteReview(r.id)} className="rounded-lg border border-destructive/30 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10">
+                  <Trash2 className="inline h-3 w-3 mr-1" /> Delete
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
