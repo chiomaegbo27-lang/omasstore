@@ -5,9 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatNGN, STORE } from "@/lib/store";
 import { toast } from "sonner";
 import {
-  ShoppingCart, Users, Package, TrendingUp, ChevronDown,
-  Truck, CheckCircle2, Clock, ChefHat, Star, RefreshCw,
-  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar
+  ShoppingCart, Users, Package, TrendingUp,
+  Truck, CheckCircle2, Clock, Star, RefreshCw,
+  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar, MessageSquare
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -33,13 +33,14 @@ type ProductRow = {
   video_url: string | null;
   texture: string | null; taste: string | null; aroma: string | null;
   cooking_notes: string | null; origin: string | null; pricing_unit: string | null;
+  quality_level: string | null;
 };
 
 const emptyProduct: Omit<ProductRow, "id"> = {
   name: "", description: "", price: 0, category: "", emoji: "🛒",
   in_stock: true, stock: 20, unit: null, subcategory: null, brand: null,
   image_url: null, video_url: null, texture: null, taste: null, aroma: null,
-  cooking_notes: null, origin: null, pricing_unit: null,
+  cooking_notes: null, origin: null, pricing_unit: null, quality_level: null,
 };
 
 async function uploadFile(bucket: string, file: File): Promise<string | null> {
@@ -50,13 +51,26 @@ async function uploadFile(bucket: string, file: File): Promise<string | null> {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
+type VariantRow = {
+  id: string; product_id: string; unit: string; measurement: string | null;
+  price: number; stock: number; is_default: boolean; sort_order: number;
+};
+
+type ReviewRow = {
+  id: string; product_id: string | null; customer_name: string; rating: number;
+  comment: string; is_approved: boolean; created_at: string;
+  products?: { name: string } | null;
+};
+
 function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const [tab, setTab] = useState<"orders" | "meals" | "customers" | "products" | "sales">("orders");
+  const [tab, setTab] = useState<"orders" | "meals" | "customers" | "products" | "reviews" | "sales">("orders");
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [mealOrders, setMealOrders] = useState<MealOrderRow[]>([]);
   const [customers, setCustomers] = useState<{ user_id: string; display_name: string | null; loyalty_points: number; phone: string | null; created_at: string }[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
+  const [variantsByProduct, setVariantsByProduct] = useState<Record<string, VariantRow[]>>({});
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [stats, setStats] = useState({ totalOrders: 0, totalRevenue: 0, totalCustomers: 0, avgOrder: 0 });
   const [editingProduct, setEditingProduct] = useState<(Partial<ProductRow> & { isNew?: boolean }) | null>(null);
 
@@ -66,17 +80,25 @@ function AdminPage() {
   }, [user, isAdmin, authLoading]);
 
   const loadData = async () => {
-    const [ordersRes, mealOrdersRes, profilesRes, productsRes] = await Promise.all([
+    const [ordersRes, mealOrdersRes, profilesRes, productsRes, variantsRes, reviewsRes] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("meal_orders").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("profiles").select("user_id, display_name, loyalty_points, phone, created_at").order("created_at", { ascending: false }),
       supabase.from("products").select("*").order("category").order("name"),
+      supabase.from("product_variants").select("*").order("sort_order"),
+      supabase.from("reviews").select("*, products(name)").order("created_at", { ascending: false }).limit(200),
     ]);
     const o = (ordersRes.data ?? []) as unknown as OrderRow[];
     setOrders(o);
     setMealOrders((mealOrdersRes.data ?? []) as MealOrderRow[]);
     setCustomers(profilesRes.data ?? []);
     setProducts((productsRes.data ?? []) as ProductRow[]);
+    const vmap: Record<string, VariantRow[]> = {};
+    for (const v of (variantsRes.data ?? []) as VariantRow[]) {
+      (vmap[v.product_id] ??= []).push(v);
+    }
+    setVariantsByProduct(vmap);
+    setReviews((reviewsRes.data ?? []) as unknown as ReviewRow[]);
     setStats({
       totalOrders: o.length,
       totalRevenue: o.reduce((s, x) => s + x.total, 0),
@@ -140,11 +162,59 @@ function AdminPage() {
   };
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Delete this product?")) return;
+    if (!confirm("Delete this product? Its variants will also be removed.")) return;
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Product deleted");
     loadData();
+  };
+
+  const addVariant = async (productId: string) => {
+    const unit = prompt("Unit (e.g. cup, bag, painter, sachet, 75cl bottle, piece, tuber)")?.trim();
+    if (!unit) return;
+    const measurement = prompt("Measurement label (optional, e.g. 75cl, 50kg) — leave blank to skip")?.trim() || null;
+    const priceStr = prompt("Price in ₦")?.trim();
+    if (!priceStr) return;
+    const price = Number(priceStr);
+    if (!Number.isFinite(price) || price < 0) { toast.error("Invalid price"); return; }
+    const stockStr = prompt("Stock available")?.trim() || "0";
+    const stock = Math.max(0, Math.floor(Number(stockStr) || 0));
+    const existing = variantsByProduct[productId] ?? [];
+    const sort_order = existing.length;
+    const is_default = existing.length === 0;
+    const { error } = await supabase.from("product_variants").insert({
+      product_id: productId, unit, measurement, price, stock, is_default, sort_order,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Variant added");
+    loadData();
+  };
+
+  const updateVariant = async (id: string, patch: Partial<VariantRow>) => {
+    const { error } = await supabase.from("product_variants").update(patch).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    loadData();
+  };
+
+  const deleteVariant = async (id: string) => {
+    if (!confirm("Delete this variant?")) return;
+    const { error } = await supabase.from("product_variants").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Variant deleted");
+    loadData();
+  };
+
+  const setReviewApproved = async (id: string, is_approved: boolean) => {
+    const { error } = await supabase.from("reviews").update({ is_approved }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setReviews((p) => p.map((r) => r.id === id ? { ...r, is_approved } : r));
+  };
+  const deleteReview = async (id: string) => {
+    if (!confirm("Delete this review?")) return;
+    const { error } = await supabase.from("reviews").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setReviews((p) => p.filter((r) => r.id !== id));
+    toast.success("Review deleted");
   };
 
   if (authLoading) return <div className="container mx-auto px-4 py-16 text-center text-muted-foreground animate-fade-in">Loading…</div>;
@@ -211,6 +281,7 @@ function AdminPage() {
           { key: "meals" as const, label: "🍲 Meals" },
           { key: "customers" as const, label: "👥 Customers" },
           { key: "products" as const, label: "📋 Products" },
+          { key: "reviews" as const, label: "⭐ Reviews" },
           { key: "sales" as const, label: "📊 Sales" },
         ]).map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
@@ -337,6 +408,9 @@ function AdminPage() {
                   <PField label="Taste" value={editingProduct.taste ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, taste: v || null })} placeholder="e.g. Sweet, Savoury" />
                   <PField label="Aroma" value={editingProduct.aroma ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, aroma: v || null })} placeholder="e.g. Rich, Smoky" />
                   <PField label="Texture" value={editingProduct.texture ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, texture: v || null })} placeholder="e.g. Smooth, Crunchy" />
+                  <PField label="Origin" value={editingProduct.origin ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, origin: v || null })} placeholder="e.g. Abakaliki, Foreign" />
+                  <PField label="Cooking notes" value={editingProduct.cooking_notes ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, cooking_notes: v || null })} placeholder="e.g. Cook for 30 mins" />
+                  <PField label="Quality level" value={editingProduct.quality_level ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, quality_level: v || null })} placeholder="e.g. Premium, Standard" />
 
                   {/* Product image upload */}
                   <div>
@@ -380,26 +454,101 @@ function AdminPage() {
             </div>
           )}
 
-          {/* Product list */}
-          <div className="space-y-2">
-            {products.map((p) => (
-              <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-card transition hover:shadow-soft">
-                <span className="text-2xl">{p.emoji ?? "🛒"}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm truncate">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{p.category}{p.subcategory ? ` > ${p.subcategory}` : ""}{p.brand ? ` > ${p.brand}` : ""} • {formatNGN(p.price)} • Stock: {p.stock}</div>
+          {/* Product list with inline variants */}
+          <div className="space-y-3">
+            {products.map((p) => {
+              const vs = variantsByProduct[p.id] ?? [];
+              return (
+                <div key={p.id} className="rounded-2xl border border-border bg-card p-3 shadow-card transition hover:shadow-soft">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{p.emoji ?? "🛒"}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm truncate">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">{p.category}{p.brand ? ` › ${p.brand}` : ""}{p.subcategory ? ` › ${p.subcategory}` : ""} {vs.length === 0 ? `• ${formatNGN(p.price)} • Stock: ${p.stock}` : `• ${vs.length} variant${vs.length > 1 ? "s" : ""}`}</div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => setEditingProduct(p)} title="Edit product" className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => deleteProduct(p.id)} title="Delete product" className="grid h-8 w-8 place-items-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition active:scale-95">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Variants */}
+                  <div className="mt-3 rounded-xl bg-muted/30 p-2">
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase">Units & prices</span>
+                      <button onClick={() => addVariant(p.id)} className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-95 active:scale-95">
+                        <Plus className="h-3 w-3" /> Add unit
+                      </button>
+                    </div>
+                    {vs.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground italic">No variants — uses the product price/stock above. Add units like cup, bag, painter, 75cl bottle, sachet, piece, tuber, etc.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {vs.map((v) => (
+                          <div key={v.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+                            <input defaultValue={v.measurement ?? ""} placeholder="size (75cl)" onBlur={(e) => { const val = e.target.value.trim() || null; if (val !== v.measurement) updateVariant(v.id, { measurement: val }); }} className="w-20 rounded-md border border-border bg-background px-1.5 py-1" />
+                            <input defaultValue={v.unit} onBlur={(e) => { const val = e.target.value.trim(); if (val && val !== v.unit) updateVariant(v.id, { unit: val }); }} className="w-24 rounded-md border border-border bg-background px-1.5 py-1 font-semibold" />
+                            <span className="text-muted-foreground">₦</span>
+                            <input type="number" defaultValue={v.price} onBlur={(e) => { const val = Number(e.target.value); if (Number.isFinite(val) && val !== Number(v.price)) updateVariant(v.id, { price: val }); }} className="w-24 rounded-md border border-border bg-background px-1.5 py-1" />
+                            <span className="text-muted-foreground">stock</span>
+                            <input type="number" defaultValue={v.stock} onBlur={(e) => { const val = Math.max(0, Math.floor(Number(e.target.value) || 0)); if (val !== v.stock) updateVariant(v.id, { stock: val }); }} className="w-16 rounded-md border border-border bg-background px-1.5 py-1" />
+                            <label className="inline-flex items-center gap-1 text-[11px]">
+                              <input type="checkbox" defaultChecked={v.is_default} onChange={(e) => updateVariant(v.id, { is_default: e.target.checked })} className="accent-primary" />
+                              default
+                            </label>
+                            <button onClick={() => deleteVariant(v.id)} className="ml-auto grid h-7 w-7 place-items-center rounded-md text-destructive hover:bg-destructive/10">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                        <p className="text-[10px] text-muted-foreground italic mt-1">Edits save when you click out of the field.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-1.5">
-                  <button onClick={() => setEditingProduct(p)} className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button onClick={() => deleteProduct(p.id)} className="grid h-8 w-8 place-items-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition active:scale-95">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Reviews tab */}
+      {tab === "reviews" && (
+        <div className="space-y-3">
+          {reviews.length === 0 ? <p className="text-center text-muted-foreground py-8">No reviews yet.</p> : reviews.map((r) => (
+            <div key={r.id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="font-semibold text-sm">{r.customer_name}</span>
+                  {r.products?.name && <span className="text-xs text-muted-foreground"> · {r.products.name}</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map((n) => (
+                      <Star key={n} className={`h-3.5 w-3.5 ${n <= r.rating ? "fill-accent text-accent" : "text-muted-foreground/30"}`} />
+                    ))}
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${r.is_approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                    {r.is_approved ? "approved" : "hidden"}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
+              <p className="mt-2 text-sm">{r.comment}</p>
+              <div className="mt-2 text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</div>
+              <div className="mt-3 flex gap-2">
+                <button onClick={() => setReviewApproved(r.id, !r.is_approved)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted">
+                  <MessageSquare className="inline h-3 w-3 mr-1" /> {r.is_approved ? "Hide" : "Approve"}
+                </button>
+                <button onClick={() => deleteReview(r.id)} className="rounded-lg border border-destructive/30 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10">
+                  <Trash2 className="inline h-3 w-3 mr-1" /> Delete
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

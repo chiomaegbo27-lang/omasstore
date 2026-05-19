@@ -81,7 +81,7 @@ function Checkout() {
       points_used: pointsToUse,
       points_earned: pointsEarned,
       user_id: user?.id ?? null,
-      items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
+      items: items.map((i) => ({ id: i.productId, variantId: i.variantId ?? null, name: i.name, price: i.price, qty: i.qty, unit: i.unit ?? null, measurement: i.measurement ?? null })),
     };
     try {
       const { data, error } = await supabase.from("orders").insert(payload).select("id").maybeSingle();
