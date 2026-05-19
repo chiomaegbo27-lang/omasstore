@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Truck, ShieldCheck, Clock, ChefHat, Star, Phone, MessageCircle } from "lucide-react";
+import { ArrowRight, Truck, ShieldCheck, Clock, ChefHat, Star, Phone, MessageCircle, Quote } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard, type Product } from "@/components/ProductCard";
@@ -16,12 +16,31 @@ export const Route = createFileRoute("/")({
   }),
 });
 
+interface HomeReview {
+  id: string;
+  customer_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  product_id: string | null;
+  products?: { name: string } | null;
+}
+
 function Home() {
   const [featured, setFeatured] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<HomeReview[]>([]);
 
   useEffect(() => {
-    supabase.from("products").select("*").eq("in_stock", true).limit(8)
+    supabase.from("products").select("*, product_variants(*)").eq("in_stock", true).limit(8)
       .then(({ data }) => setFeatured((data ?? []) as Product[]));
+
+    supabase
+      .from("reviews")
+      .select("id, customer_name, rating, comment, created_at, product_id, products(name)")
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false })
+      .limit(6)
+      .then(({ data }) => setReviews((data ?? []) as unknown as HomeReview[]));
   }, []);
 
   return (
@@ -45,7 +64,6 @@ function Home() {
                 <ChefHat className="h-4 w-4" /> Order a Meal
               </Link>
             </div>
-            {/* Quick order buttons */}
             <div className="flex items-center gap-4 pt-2 animate-fade-in" style={{ animationDelay: "500ms" }}>
               <a href={`https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent("Hello, I'd like to place an order!")}`} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full bg-whatsapp px-5 py-2.5 text-sm font-semibold text-whatsapp-foreground shadow-sm transition-all duration-200 hover:scale-105 active:scale-95">
@@ -94,6 +112,37 @@ function Home() {
           {featured.map((p, i) => <ProductCard key={p.id} p={p} index={i} />)}
         </div>
       </section>
+
+      {/* Reviews */}
+      {reviews.length > 0 && (
+        <section className="bg-secondary/30">
+          <div className="container mx-auto max-w-6xl px-4 py-12 md:py-16">
+            <div className="mb-6 text-center">
+              <h2 className="font-display text-2xl font-bold md:text-3xl">What customers are saying</h2>
+              <p className="text-sm text-muted-foreground">Real reviews from our happy shoppers.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {reviews.map((r, i) => (
+                <div key={r.id} className="rounded-2xl border border-border bg-card p-5 shadow-card animate-fade-in" style={{ animationDelay: `${i * 80}ms`, animationFillMode: "both" }}>
+                  <Quote className="h-5 w-5 text-primary/40 mb-2" />
+                  <div className="flex gap-0.5 mb-2">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-accent text-accent" : "text-muted-foreground/30"}`} />
+                    ))}
+                  </div>
+                  <p className="text-sm leading-relaxed line-clamp-4">{r.comment}</p>
+                  <div className="mt-3 text-xs">
+                    <span className="font-semibold">{r.customer_name}</span>
+                    {r.products?.name && (
+                      <span className="text-muted-foreground"> · on {r.products.name}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Meals CTA */}
       <section className="bg-gradient-to-br from-pink-soft to-blue-soft">
