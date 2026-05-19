@@ -30,6 +30,12 @@ export interface Product {
   brand?: string | null;
   image_url?: string | null;
   video_url?: string | null;
+  texture?: string | null;
+  taste?: string | null;
+  aroma?: string | null;
+  origin?: string | null;
+  cooking_notes?: string | null;
+  quality_level?: string | null;
   product_variants?: ProductVariant[];
 }
 
