@@ -50,13 +50,26 @@ async function uploadFile(bucket: string, file: File): Promise<string | null> {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
+type VariantRow = {
+  id: string; product_id: string; unit: string; measurement: string | null;
+  price: number; stock: number; is_default: boolean; sort_order: number;
+};
+
+type ReviewRow = {
+  id: string; product_id: string | null; customer_name: string; rating: number;
+  comment: string; is_approved: boolean; created_at: string;
+  products?: { name: string } | null;
+};
+
 function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const [tab, setTab] = useState<"orders" | "meals" | "customers" | "products" | "sales">("orders");
+  const [tab, setTab] = useState<"orders" | "meals" | "customers" | "products" | "reviews" | "sales">("orders");
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [mealOrders, setMealOrders] = useState<MealOrderRow[]>([]);
   const [customers, setCustomers] = useState<{ user_id: string; display_name: string | null; loyalty_points: number; phone: string | null; created_at: string }[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
+  const [variantsByProduct, setVariantsByProduct] = useState<Record<string, VariantRow[]>>({});
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [stats, setStats] = useState({ totalOrders: 0, totalRevenue: 0, totalCustomers: 0, avgOrder: 0 });
   const [editingProduct, setEditingProduct] = useState<(Partial<ProductRow> & { isNew?: boolean }) | null>(null);
 
@@ -66,17 +79,25 @@ function AdminPage() {
   }, [user, isAdmin, authLoading]);
 
   const loadData = async () => {
-    const [ordersRes, mealOrdersRes, profilesRes, productsRes] = await Promise.all([
+    const [ordersRes, mealOrdersRes, profilesRes, productsRes, variantsRes, reviewsRes] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("meal_orders").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("profiles").select("user_id, display_name, loyalty_points, phone, created_at").order("created_at", { ascending: false }),
       supabase.from("products").select("*").order("category").order("name"),
+      supabase.from("product_variants").select("*").order("sort_order"),
+      supabase.from("reviews").select("*, products(name)").order("created_at", { ascending: false }).limit(200),
     ]);
     const o = (ordersRes.data ?? []) as unknown as OrderRow[];
     setOrders(o);
     setMealOrders((mealOrdersRes.data ?? []) as MealOrderRow[]);
     setCustomers(profilesRes.data ?? []);
     setProducts((productsRes.data ?? []) as ProductRow[]);
+    const vmap: Record<string, VariantRow[]> = {};
+    for (const v of (variantsRes.data ?? []) as VariantRow[]) {
+      (vmap[v.product_id] ??= []).push(v);
+    }
+    setVariantsByProduct(vmap);
+    setReviews((reviewsRes.data ?? []) as unknown as ReviewRow[]);
     setStats({
       totalOrders: o.length,
       totalRevenue: o.reduce((s, x) => s + x.total, 0),
