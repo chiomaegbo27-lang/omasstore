@@ -669,3 +669,67 @@ function SalesCard({ icon: I, label, total, count, color }: { icon: typeof Calen
     </div>
   );
 }
+
+function RTField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+      <RichTextEditor value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+function MediaManager({
+  productId,
+  media,
+  onAdd,
+  onDelete,
+  onReorder,
+}: {
+  productId: string;
+  media: { id: string; url: string; type: "image" | "video"; sort_order: number }[];
+  onAdd: (type: "image" | "video", file: File) => void;
+  onDelete: (id: string) => void;
+  onReorder: (index: number, dir: -1 | 1) => void;
+}) {
+  return (
+    <div className="mt-3 rounded-xl bg-muted/30 p-3" key={productId}>
+      <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-muted-foreground uppercase">Images & videos (slider)</span>
+        <div className="flex gap-2">
+          <label className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-95 cursor-pointer">
+            <Plus className="h-3 w-3" /> Add image
+            <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onAdd("image", f); e.currentTarget.value = ""; }} />
+          </label>
+          <label className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-foreground hover:opacity-95 cursor-pointer">
+            <Plus className="h-3 w-3" /> Add video
+            <input type="file" accept="video/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onAdd("video", f); e.currentTarget.value = ""; }} />
+          </label>
+        </div>
+      </div>
+      {media.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground italic">No extra media yet. Add images for the slider or a brand-advert video. Customers swipe through them on the product card.</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {media.map((m, i) => (
+            <div key={m.id} className="relative rounded-lg border border-border overflow-hidden bg-card">
+              {m.type === "image" ? (
+                <img src={m.url} alt="" className="aspect-square w-full object-cover" />
+              ) : (
+                <video src={m.url} className="aspect-square w-full object-cover" muted />
+              )}
+              <div className="absolute top-1 left-1 rounded bg-background/85 px-1 text-[9px] font-semibold">
+                {m.type === "image" ? <ImageIcon className="h-3 w-3 inline" /> : <Film className="h-3 w-3 inline" />}
+              </div>
+              <div className="absolute bottom-1 right-1 flex gap-0.5">
+                <button onClick={() => onReorder(i, -1)} disabled={i === 0} className="grid h-6 w-6 place-items-center rounded bg-background/90 disabled:opacity-30"><ArrowUp className="h-3 w-3" /></button>
+                <button onClick={() => onReorder(i, 1)} disabled={i === media.length - 1} className="grid h-6 w-6 place-items-center rounded bg-background/90 disabled:opacity-30"><ArrowDown className="h-3 w-3" /></button>
+                <button onClick={() => onDelete(m.id)} className="grid h-6 w-6 place-items-center rounded bg-destructive text-destructive-foreground"><Trash2 className="h-3 w-3" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
