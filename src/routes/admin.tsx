@@ -64,6 +64,10 @@ type ReviewRow = {
   products?: { name: string } | null;
 };
 
+type MediaRow = {
+  id: string; product_id: string; url: string; type: "image" | "video"; sort_order: number;
+};
+
 function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<"orders" | "meals" | "customers" | "products" | "reviews" | "sales">("orders");
@@ -72,6 +76,8 @@ function AdminPage() {
   const [customers, setCustomers] = useState<{ user_id: string; display_name: string | null; loyalty_points: number; phone: string | null; created_at: string }[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [variantsByProduct, setVariantsByProduct] = useState<Record<string, VariantRow[]>>({});
+  const [mediaByProduct, setMediaByProduct] = useState<Record<string, MediaRow[]>>({});
+  const [managingMediaFor, setManagingMediaFor] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [stats, setStats] = useState({ totalOrders: 0, totalRevenue: 0, totalCustomers: 0, avgOrder: 0 });
   const [editingProduct, setEditingProduct] = useState<(Partial<ProductRow> & { isNew?: boolean }) | null>(null);
