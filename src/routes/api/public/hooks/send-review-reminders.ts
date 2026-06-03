@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/public/hooks/send-review-reminders")(
           .select("id, customer_name, phone, total")
           .eq("status", "delivered")
           .is("review_reminder_sent_at", null)
-          .lt("updated_at", cutoff)
+          .lt("created_at", cutoff)
           .limit(100);
 
         if (error) {

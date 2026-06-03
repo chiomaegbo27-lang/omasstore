@@ -19,6 +19,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as OrderIdRouteImport } from './routes/order.$id'
+import { Route as ApiPublicHooksSendReviewRemindersRouteImport } from './routes/api/public/hooks/send-review-reminders'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
@@ -70,6 +71,12 @@ const OrderIdRoute = OrderIdRouteImport.update({
   path: '/order/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksSendReviewRemindersRoute =
+  ApiPublicHooksSendReviewRemindersRouteImport.update({
+    id: '/api/public/hooks/send-review-reminders',
+    path: '/api/public/hooks/send-review-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopRoute
   '/order/$id': typeof OrderIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/api/public/hooks/send-review-reminders': typeof ApiPublicHooksSendReviewRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopRoute
   '/order/$id': typeof OrderIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/api/public/hooks/send-review-reminders': typeof ApiPublicHooksSendReviewRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +116,7 @@ export interface FileRoutesById {
   '/shop': typeof ShopRoute
   '/order/$id': typeof OrderIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/api/public/hooks/send-review-reminders': typeof ApiPublicHooksSendReviewRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/order/$id'
     | '/product/$id'
+    | '/api/public/hooks/send-review-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/order/$id'
     | '/product/$id'
+    | '/api/public/hooks/send-review-reminders'
   id:
     | '__root__'
     | '/'
@@ -145,6 +157,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/order/$id'
     | '/product/$id'
+    | '/api/public/hooks/send-review-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +171,7 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   OrderIdRoute: typeof OrderIdRoute
   ProductIdRoute: typeof ProductIdRoute
+  ApiPublicHooksSendReviewRemindersRoute: typeof ApiPublicHooksSendReviewRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,6 +246,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/send-review-reminders': {
+      id: '/api/public/hooks/send-review-reminders'
+      path: '/api/public/hooks/send-review-reminders'
+      fullPath: '/api/public/hooks/send-review-reminders'
+      preLoaderRoute: typeof ApiPublicHooksSendReviewRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -246,6 +267,8 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   OrderIdRoute: OrderIdRoute,
   ProductIdRoute: ProductIdRoute,
+  ApiPublicHooksSendReviewRemindersRoute:
+    ApiPublicHooksSendReviewRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
