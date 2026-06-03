@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import {
   ShoppingCart, Users, Package, TrendingUp,
   Truck, CheckCircle2, Clock, Star, RefreshCw,
-  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar, MessageSquare
+  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar, MessageSquare,
+  Image as ImageIcon, Film, ArrowUp, ArrowDown, Send,
 } from "lucide-react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
