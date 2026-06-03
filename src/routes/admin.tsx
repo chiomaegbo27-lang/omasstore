@@ -515,6 +515,9 @@ function AdminPage() {
                       <div className="text-xs text-muted-foreground">{p.category}{p.brand ? ` › ${p.brand}` : ""}{p.subcategory ? ` › ${p.subcategory}` : ""} {vs.length === 0 ? `• ${formatNGN(p.price)} • Stock: ${p.stock}` : `• ${vs.length} variant${vs.length > 1 ? "s" : ""}`}</div>
                     </div>
                     <div className="flex gap-1.5">
+                      <button onClick={() => setManagingMediaFor(managingMediaFor === p.id ? null : p.id)} title="Manage media (images & videos)" className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
+                        <ImageIcon className="h-3.5 w-3.5" />
+                      </button>
                       <button onClick={() => setEditingProduct(p)} title="Edit product" className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -523,6 +526,17 @@ function AdminPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Media manager */}
+                  {managingMediaFor === p.id && (
+                    <MediaManager
+                      productId={p.id}
+                      media={(mediaByProduct[p.id] ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)}
+                      onAdd={(t, f) => addMedia(p.id, t, f)}
+                      onDelete={deleteMedia}
+                      onReorder={(idx, dir) => reorderMedia(p.id, idx, dir)}
+                    />
+                  )}
 
                   {/* Variants */}
                   <div className="mt-3 rounded-xl bg-muted/30 p-2">
