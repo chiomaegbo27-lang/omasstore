@@ -1,26 +1,32 @@
-// Loyalty points: purchases ₦6,000+ only
-// Formula: divide total by ₦5,000 → result × 1,000 pts
-// Remainder ≥ ₦1,000 gets 100 pts per ₦1,000
-// Examples: ₦6,000 = 1,000 + 100 = 1,100 pts
-//           ₦10,000 = 2,000 pts
-//           ₦15,000 = 3,000 pts
-//           ₦11,000 = 2,000 + 100 = 2,100 pts
+// Tiered loyalty rewards
+// ₦1,000 = 100 pts | ₦2,000 = 150 | ₦3,000 = 250 | ₦4,000 = 500
+// Every full ₦5,000 = 1,000 pts; remainder applies the tier table above.
+// Examples: ₦12,000 → 2×1,000 + ₦2,000 tier (150) = 2,150 pts.
+//           ₦7,000  → 1×1,000 + ₦2,000 tier (150) = 1,150 pts.
+//           ₦3,000  → 250 pts.
+
+const REMAINDER_TIERS: Record<number, number> = {
+  1: 100,
+  2: 150,
+  3: 250,
+  4: 500,
+};
 
 export function calculatePointsEarned(totalSpent: number): number {
-  if (totalSpent < 6000) return 0;
+  if (totalSpent < 1000) return 0;
   const fullBlocks = Math.floor(totalSpent / 5000);
-  const remainder = totalSpent - fullBlocks * 5000;
-  const blockPoints = fullBlocks * 1000;
-  const remainderPoints = Math.floor(remainder / 1000) * 100;
-  return blockPoints + remainderPoints;
+  const remainderNaira = totalSpent - fullBlocks * 5000;
+  const remainderBlocks = Math.floor(remainderNaira / 1000); // 0..4
+  const remainderPts = REMAINDER_TIERS[remainderBlocks] ?? 0;
+  return fullBlocks * 1000 + remainderPts;
 }
 
 export const LOYALTY_TIERS = [
-  { min: 6000, points: 1100, label: "₦6,000 = 1,100 pts" },
-  { min: 10000, points: 2000, label: "₦10,000 = 2,000 pts" },
-  { min: 15000, points: 3000, label: "₦15,000 = 3,000 pts" },
-  { min: 20000, points: 4000, label: "₦20,000 = 4,000 pts" },
-  { min: 25000, points: 5000, label: "₦25,000 = 5,000 pts" },
+  { min: 1000, points: 100, label: "₦1,000 = 100 pts" },
+  { min: 2000, points: 150, label: "₦2,000 = 150 pts" },
+  { min: 3000, points: 250, label: "₦3,000 = 250 pts" },
+  { min: 4000, points: 500, label: "₦4,000 = 500 pts" },
+  { min: 5000, points: 1000, label: "₦5,000 = 1,000 pts" },
 ];
 
 // 1 point = ₦1

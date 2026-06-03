@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import {
   ShoppingCart, Users, Package, TrendingUp,
   Truck, CheckCircle2, Clock, Star, RefreshCw,
-  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar, MessageSquare
+  Plus, Pencil, Trash2, Save, X, BarChart3, Calendar, MessageSquare,
+  Image as ImageIcon, Film, ArrowUp, ArrowDown, Send,
 } from "lucide-react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -62,6 +64,10 @@ type ReviewRow = {
   products?: { name: string } | null;
 };
 
+type MediaRow = {
+  id: string; product_id: string; url: string; type: "image" | "video"; sort_order: number;
+};
+
 function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<"orders" | "meals" | "customers" | "products" | "reviews" | "sales">("orders");
@@ -70,6 +76,8 @@ function AdminPage() {
   const [customers, setCustomers] = useState<{ user_id: string; display_name: string | null; loyalty_points: number; phone: string | null; created_at: string }[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [variantsByProduct, setVariantsByProduct] = useState<Record<string, VariantRow[]>>({});
+  const [mediaByProduct, setMediaByProduct] = useState<Record<string, MediaRow[]>>({});
+  const [managingMediaFor, setManagingMediaFor] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [stats, setStats] = useState({ totalOrders: 0, totalRevenue: 0, totalCustomers: 0, avgOrder: 0 });
   const [editingProduct, setEditingProduct] = useState<(Partial<ProductRow> & { isNew?: boolean }) | null>(null);
@@ -80,12 +88,13 @@ function AdminPage() {
   }, [user, isAdmin, authLoading]);
 
   const loadData = async () => {
-    const [ordersRes, mealOrdersRes, profilesRes, productsRes, variantsRes, reviewsRes] = await Promise.all([
+    const [ordersRes, mealOrdersRes, profilesRes, productsRes, variantsRes, mediaRes, reviewsRes] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("meal_orders").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("profiles").select("user_id, display_name, loyalty_points, phone, created_at").order("created_at", { ascending: false }),
       supabase.from("products").select("*").order("category").order("name"),
       supabase.from("product_variants").select("*").order("sort_order"),
+      supabase.from("product_media").select("*").order("sort_order"),
       supabase.from("reviews").select("*, products(name)").order("created_at", { ascending: false }).limit(200),
     ]);
     const o = (ordersRes.data ?? []) as unknown as OrderRow[];
@@ -98,6 +107,11 @@ function AdminPage() {
       (vmap[v.product_id] ??= []).push(v);
     }
     setVariantsByProduct(vmap);
+    const mmap: Record<string, MediaRow[]> = {};
+    for (const m of ((mediaRes.data ?? []) as MediaRow[])) {
+      (mmap[m.product_id] ??= []).push(m);
+    }
+    setMediaByProduct(mmap);
     setReviews((reviewsRes.data ?? []) as unknown as ReviewRow[]);
     setStats({
       totalOrders: o.length,
@@ -201,6 +215,40 @@ function AdminPage() {
     const { error } = await supabase.from("product_variants").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Variant deleted");
+    loadData();
+  };
+
+  const addMedia = async (productId: string, type: "image" | "video", file: File) => {
+    const bucket = type === "image" ? "product-images" : "product-videos";
+    if (type === "video" && file.size > 50 * 1024 * 1024) { toast.error("Video must be under 50MB"); return; }
+    toast.info(`Uploading ${type}…`);
+    const url = await uploadFile(bucket, file);
+    if (!url) return;
+    const existing = mediaByProduct[productId] ?? [];
+    const { error } = await supabase.from("product_media").insert({
+      product_id: productId, url, type, sort_order: existing.length,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${type} added`);
+    loadData();
+  };
+
+  const deleteMedia = async (id: string) => {
+    if (!confirm("Remove this media?")) return;
+    const { error } = await supabase.from("product_media").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    loadData();
+  };
+
+  const reorderMedia = async (productId: string, index: number, dir: -1 | 1) => {
+    const list = (mediaByProduct[productId] ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+    const target = index + dir;
+    if (target < 0 || target >= list.length) return;
+    const a = list[index], b = list[target];
+    await Promise.all([
+      supabase.from("product_media").update({ sort_order: b.sort_order }).eq("id", a.id),
+      supabase.from("product_media").update({ sort_order: a.sort_order }).eq("id", b.id),
+    ]);
     loadData();
   };
 
@@ -321,6 +369,16 @@ function AdminPage() {
                   </button>
                 ))}
               </div>
+              {o.status === "delivered" && (
+                <a
+                  href={`https://wa.me/${o.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello ${o.customer_name}! Thank you for shopping at ${STORE.name}. We'd love to hear how your order went 🌟 Please leave a quick review here: ${typeof window !== "undefined" ? window.location.origin : ""}/order/${o.id}?review=1`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-whatsapp px-3 py-1.5 text-xs font-semibold text-whatsapp-foreground hover:opacity-95 active:scale-95"
+                >
+                  <Send className="h-3 w-3" /> Send WhatsApp review reminder
+                </a>
+              )}
             </div>
           ))}
         </div>
@@ -404,13 +462,13 @@ function AdminPage() {
                     <PField label="Unit" value={editingProduct.unit ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, unit: v || null })} placeholder="e.g. bag, cup, pack" />
                     <PField label="Emoji" value={editingProduct.emoji ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, emoji: v || null })} placeholder="🍚" />
                   </div>
-                  <PField label="Description" value={editingProduct.description ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, description: v || null })} />
-                  <PField label="Taste" value={editingProduct.taste ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, taste: v || null })} placeholder="e.g. Sweet, Savoury" />
-                  <PField label="Aroma" value={editingProduct.aroma ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, aroma: v || null })} placeholder="e.g. Rich, Smoky" />
-                  <PField label="Texture" value={editingProduct.texture ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, texture: v || null })} placeholder="e.g. Smooth, Crunchy" />
-                  <PField label="Origin" value={editingProduct.origin ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, origin: v || null })} placeholder="e.g. Abakaliki, Foreign" />
-                  <PField label="Cooking notes" value={editingProduct.cooking_notes ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, cooking_notes: v || null })} placeholder="e.g. Cook for 30 mins" />
-                  <PField label="Quality level" value={editingProduct.quality_level ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, quality_level: v || null })} placeholder="e.g. Premium, Standard" />
+                  <RTField label="Description" value={editingProduct.description ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, description: v })} />
+                  <RTField label="Taste" value={editingProduct.taste ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, taste: v })} />
+                  <RTField label="Aroma" value={editingProduct.aroma ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, aroma: v })} />
+                  <RTField label="Texture" value={editingProduct.texture ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, texture: v })} />
+                  <RTField label="Origin" value={editingProduct.origin ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, origin: v })} />
+                  <RTField label="Cooking notes" value={editingProduct.cooking_notes ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, cooking_notes: v })} />
+                  <RTField label="Quality level" value={editingProduct.quality_level ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, quality_level: v })} />
 
                   {/* Product image upload */}
                   <div>
@@ -467,6 +525,9 @@ function AdminPage() {
                       <div className="text-xs text-muted-foreground">{p.category}{p.brand ? ` › ${p.brand}` : ""}{p.subcategory ? ` › ${p.subcategory}` : ""} {vs.length === 0 ? `• ${formatNGN(p.price)} • Stock: ${p.stock}` : `• ${vs.length} variant${vs.length > 1 ? "s" : ""}`}</div>
                     </div>
                     <div className="flex gap-1.5">
+                      <button onClick={() => setManagingMediaFor(managingMediaFor === p.id ? null : p.id)} title="Manage media (images & videos)" className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
+                        <ImageIcon className="h-3.5 w-3.5" />
+                      </button>
                       <button onClick={() => setEditingProduct(p)} title="Edit product" className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-muted transition active:scale-95">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -475,6 +536,17 @@ function AdminPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Media manager */}
+                  {managingMediaFor === p.id && (
+                    <MediaManager
+                      productId={p.id}
+                      media={(mediaByProduct[p.id] ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)}
+                      onAdd={(t, f) => addMedia(p.id, t, f)}
+                      onDelete={deleteMedia}
+                      onReorder={(idx, dir) => reorderMedia(p.id, idx, dir)}
+                    />
+                  )}
 
                   {/* Variants */}
                   <div className="mt-3 rounded-xl bg-muted/30 p-2">
@@ -604,6 +676,70 @@ function SalesCard({ icon: I, label, total, count, color }: { icon: typeof Calen
       </div>
       <div className="text-2xl font-bold">{formatNGN(total)}</div>
       <div className="text-xs text-muted-foreground mt-1">{count} order{count !== 1 ? "s" : ""}</div>
+    </div>
+  );
+}
+
+function RTField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</span>
+      <RichTextEditor value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+function MediaManager({
+  productId,
+  media,
+  onAdd,
+  onDelete,
+  onReorder,
+}: {
+  productId: string;
+  media: { id: string; url: string; type: "image" | "video"; sort_order: number }[];
+  onAdd: (type: "image" | "video", file: File) => void;
+  onDelete: (id: string) => void;
+  onReorder: (index: number, dir: -1 | 1) => void;
+}) {
+  return (
+    <div className="mt-3 rounded-xl bg-muted/30 p-3" key={productId}>
+      <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-muted-foreground uppercase">Images & videos (slider)</span>
+        <div className="flex gap-2">
+          <label className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-95 cursor-pointer">
+            <Plus className="h-3 w-3" /> Add image
+            <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onAdd("image", f); e.currentTarget.value = ""; }} />
+          </label>
+          <label className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-foreground hover:opacity-95 cursor-pointer">
+            <Plus className="h-3 w-3" /> Add video
+            <input type="file" accept="video/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onAdd("video", f); e.currentTarget.value = ""; }} />
+          </label>
+        </div>
+      </div>
+      {media.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground italic">No extra media yet. Add images for the slider or a brand-advert video. Customers swipe through them on the product card.</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {media.map((m, i) => (
+            <div key={m.id} className="relative rounded-lg border border-border overflow-hidden bg-card">
+              {m.type === "image" ? (
+                <img src={m.url} alt="" className="aspect-square w-full object-cover" />
+              ) : (
+                <video src={m.url} className="aspect-square w-full object-cover" muted />
+              )}
+              <div className="absolute top-1 left-1 rounded bg-background/85 px-1 text-[9px] font-semibold">
+                {m.type === "image" ? <ImageIcon className="h-3 w-3 inline" /> : <Film className="h-3 w-3 inline" />}
+              </div>
+              <div className="absolute bottom-1 right-1 flex gap-0.5">
+                <button onClick={() => onReorder(i, -1)} disabled={i === 0} className="grid h-6 w-6 place-items-center rounded bg-background/90 disabled:opacity-30"><ArrowUp className="h-3 w-3" /></button>
+                <button onClick={() => onReorder(i, 1)} disabled={i === media.length - 1} className="grid h-6 w-6 place-items-center rounded bg-background/90 disabled:opacity-30"><ArrowDown className="h-3 w-3" /></button>
+                <button onClick={() => onDelete(m.id)} className="grid h-6 w-6 place-items-center rounded bg-destructive text-destructive-foreground"><Trash2 className="h-3 w-3" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

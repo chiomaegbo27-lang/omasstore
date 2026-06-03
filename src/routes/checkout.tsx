@@ -22,6 +22,7 @@ function Checkout() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
   const [fulfillment, setFulfillment] = useState<"pickup" | "delivery">("delivery");
   const [locationId, setLocationId] = useState("");
   const [locations, setLocations] = useState<DeliveryLoc[]>([]);
@@ -78,6 +79,7 @@ function Checkout() {
       delivery_fee: deliveryFee,
       subtotal,
       total,
+      notes: notes.trim() || null,
       points_used: pointsToUse,
       points_earned: pointsEarned,
       user_id: user?.id ?? null,
@@ -148,6 +150,17 @@ function Checkout() {
               </Field>
             </>
           )}
+
+          <Field label="Additional notes / special instructions (optional)">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              maxLength={500}
+              className="input resize-none"
+              placeholder="e.g. Please pack the bread separately, ring the gate twice, leave with security, etc."
+            />
+          </Field>
 
           {/* Loyalty points */}
           {user && (profile?.loyalty_points ?? 0) > 0 && (
