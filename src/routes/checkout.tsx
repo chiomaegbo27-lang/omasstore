@@ -151,6 +151,17 @@ function Checkout() {
             </>
           )}
 
+          <Field label="Additional notes / special instructions (optional)">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              maxLength={500}
+              className="input resize-none"
+              placeholder="e.g. Please pack the bread separately, ring the gate twice, leave with security, etc."
+            />
+          </Field>
+
           {/* Loyalty points */}
           {user && (profile?.loyalty_points ?? 0) > 0 && (
             <div className="rounded-xl border border-accent/30 bg-accent/5 p-4">
