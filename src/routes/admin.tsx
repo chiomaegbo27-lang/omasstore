@@ -218,6 +218,40 @@ function AdminPage() {
     loadData();
   };
 
+  const addMedia = async (productId: string, type: "image" | "video", file: File) => {
+    const bucket = type === "image" ? "product-images" : "product-videos";
+    if (type === "video" && file.size > 50 * 1024 * 1024) { toast.error("Video must be under 50MB"); return; }
+    toast.info(`Uploading ${type}…`);
+    const url = await uploadFile(bucket, file);
+    if (!url) return;
+    const existing = mediaByProduct[productId] ?? [];
+    const { error } = await supabase.from("product_media").insert({
+      product_id: productId, url, type, sort_order: existing.length,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${type} added`);
+    loadData();
+  };
+
+  const deleteMedia = async (id: string) => {
+    if (!confirm("Remove this media?")) return;
+    const { error } = await supabase.from("product_media").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    loadData();
+  };
+
+  const reorderMedia = async (productId: string, index: number, dir: -1 | 1) => {
+    const list = (mediaByProduct[productId] ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+    const target = index + dir;
+    if (target < 0 || target >= list.length) return;
+    const a = list[index], b = list[target];
+    await Promise.all([
+      supabase.from("product_media").update({ sort_order: b.sort_order }).eq("id", a.id),
+      supabase.from("product_media").update({ sort_order: a.sort_order }).eq("id", b.id),
+    ]);
+    loadData();
+  };
+
   const setReviewApproved = async (id: string, is_approved: boolean) => {
     const { error } = await supabase.from("reviews").update({ is_approved }).eq("id", id);
     if (error) { toast.error(error.message); return; }
