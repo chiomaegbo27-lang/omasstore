@@ -224,9 +224,11 @@ export type Database = {
           fulfillment: string
           id: string
           items: Json
+          notes: string | null
           phone: string
           points_earned: number
           points_used: number
+          review_reminder_sent_at: string | null
           status: string
           subtotal: number
           total: number
@@ -241,9 +243,11 @@ export type Database = {
           fulfillment: string
           id?: string
           items: Json
+          notes?: string | null
           phone: string
           points_earned?: number
           points_used?: number
+          review_reminder_sent_at?: string | null
           status?: string
           subtotal: number
           total: number
@@ -258,14 +262,43 @@ export type Database = {
           fulfillment?: string
           id?: string
           items?: Json
+          notes?: string | null
           phone?: string
           points_earned?: number
           points_used?: number
+          review_reminder_sent_at?: string | null
           status?: string
           subtotal?: number
           total?: number
           user_id?: string | null
           zone?: string | null
+        }
+        Relationships: []
+      }
+      product_media: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          sort_order: number
+          type: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          sort_order?: number
+          type: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          sort_order?: number
+          type?: string
+          url?: string
         }
         Relationships: []
       }
