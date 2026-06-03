@@ -369,6 +369,16 @@ function AdminPage() {
                   </button>
                 ))}
               </div>
+              {o.status === "delivered" && (
+                <a
+                  href={`https://wa.me/${o.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello ${o.customer_name}! Thank you for shopping at ${STORE.name}. We'd love to hear how your order went 🌟 Please leave a quick review here: ${typeof window !== "undefined" ? window.location.origin : ""}/order/${o.id}?review=1`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-whatsapp px-3 py-1.5 text-xs font-semibold text-whatsapp-foreground hover:opacity-95 active:scale-95"
+                >
+                  <Send className="h-3 w-3" /> Send WhatsApp review reminder
+                </a>
+              )}
             </div>
           ))}
         </div>
