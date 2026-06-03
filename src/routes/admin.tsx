@@ -88,12 +88,13 @@ function AdminPage() {
   }, [user, isAdmin, authLoading]);
 
   const loadData = async () => {
-    const [ordersRes, mealOrdersRes, profilesRes, productsRes, variantsRes, reviewsRes] = await Promise.all([
+    const [ordersRes, mealOrdersRes, profilesRes, productsRes, variantsRes, mediaRes, reviewsRes] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("meal_orders").select("*").order("created_at", { ascending: false }).limit(50),
       supabase.from("profiles").select("user_id, display_name, loyalty_points, phone, created_at").order("created_at", { ascending: false }),
       supabase.from("products").select("*").order("category").order("name"),
       supabase.from("product_variants").select("*").order("sort_order"),
+      supabase.from("product_media").select("*").order("sort_order"),
       supabase.from("reviews").select("*, products(name)").order("created_at", { ascending: false }).limit(200),
     ]);
     const o = (ordersRes.data ?? []) as unknown as OrderRow[];
@@ -106,6 +107,11 @@ function AdminPage() {
       (vmap[v.product_id] ??= []).push(v);
     }
     setVariantsByProduct(vmap);
+    const mmap: Record<string, MediaRow[]> = {};
+    for (const m of ((mediaRes.data ?? []) as MediaRow[])) {
+      (mmap[m.product_id] ??= []).push(m);
+    }
+    setMediaByProduct(mmap);
     setReviews((reviewsRes.data ?? []) as unknown as ReviewRow[]);
     setStats({
       totalOrders: o.length,
