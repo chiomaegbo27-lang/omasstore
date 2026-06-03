@@ -1,9 +1,11 @@
-import { Plus, Minus, Play, Pause } from "lucide-react";
-import { useRef, useState } from "react";
+import { Plus, Minus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { useCart, cartLineId } from "@/lib/cart";
 import { formatNGN } from "@/lib/store";
 import { toast } from "sonner";
+import { ProductMediaCarousel, type MediaItem } from "@/components/ProductMediaCarousel";
 
 export interface ProductVariant {
   id: string;
@@ -13,6 +15,13 @@ export interface ProductVariant {
   price: number;
   stock: number;
   is_default: boolean;
+  sort_order: number;
+}
+
+export interface ProductMedia {
+  id: string;
+  url: string;
+  type: "image" | "video";
   sort_order: number;
 }
 
@@ -37,17 +46,35 @@ export interface Product {
   cooking_notes?: string | null;
   quality_level?: string | null;
   product_variants?: ProductVariant[];
+  product_media?: ProductMedia[];
 }
 
 export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
   const { add, setQty, items } = useCart();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [playing, setPlaying] = useState(false);
+
+  // Hydrate media if parent didn't include it (e.g. legacy queries)
+  const [extraMedia, setExtraMedia] = useState<ProductMedia[] | null>(null);
+  useEffect(() => {
+    if (p.product_media !== undefined) return;
+    supabase.from("product_media").select("*").eq("product_id", p.id).order("sort_order")
+      .then(({ data }) => setExtraMedia((data ?? []) as ProductMedia[]));
+  }, [p.id, p.product_media]);
+
+  const mediaRows = (p.product_media ?? extraMedia ?? []) as ProductMedia[];
+  const media: MediaItem[] = (() => {
+    if (mediaRows.length) {
+      const posterUrl = p.image_url ?? mediaRows.find((m) => m.type === "image")?.url ?? null;
+      return mediaRows.map((m) => ({ url: m.url, type: m.type, poster: m.type === "video" ? posterUrl : null }));
+    }
+    const items: MediaItem[] = [];
+    if (p.image_url) items.push({ url: p.image_url, type: "image" });
+    if (p.video_url) items.push({ url: p.video_url, type: "video", poster: p.image_url ?? null });
+    return items;
+  })();
 
   const variants = (p.product_variants ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const hasVariants = variants.length > 0;
 
-  // Single-unit quick add (no variants)
   const lineId = cartLineId(p.id, null);
   const inCart = items.find((i) => i.id === lineId);
   const qty = inCart?.qty ?? 0;
@@ -74,68 +101,30 @@ export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
   };
   const dec = () => setQty(lineId, qty - 1);
 
-  const toggleVideo = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const v = videoRef.current; if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
-  };
-
   return (
     <div
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-soft animate-fade-in"
       style={{ animationDelay: `${Math.min(index * 60, 600)}ms`, animationFillMode: "both" }}
     >
-      <Link
-        to="/product/$id"
-        params={{ id: p.id }}
-        className="relative grid aspect-square place-items-center bg-gradient-to-br from-pink-soft to-blue-soft overflow-hidden text-left"
-        aria-label={p.name}
-      >
-        {p.video_url ? (
-          <>
-            <video
-              ref={videoRef}
-              src={p.video_url}
-              poster={p.image_url ?? undefined}
-              preload="metadata"
-              playsInline
-              onEnded={() => setPlaying(false)}
-              className="h-full w-full object-cover"
-            />
-            <button
-              type="button"
-              onClick={toggleVideo}
-              aria-label={playing ? "Pause advert" : "Play advert"}
-              className="absolute inset-0 grid place-items-center bg-black/0 hover:bg-black/20 transition"
-            >
-              <span className={`grid h-10 w-10 place-items-center rounded-full bg-white/95 text-primary shadow transition ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
-                {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-              </span>
-            </button>
-          </>
-        ) : p.image_url ? (
-          <img src={p.image_url} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
-        ) : (
-          <span aria-hidden className="text-6xl transition-transform duration-300 group-hover:scale-110">{p.emoji ?? "🛒"}</span>
-        )}
-        <span className="absolute left-2 top-2 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur">
+      <div className="relative">
+        <ProductMediaCarousel media={media} alt={p.name} fallbackEmoji={p.emoji} rounded="" />
+        <span className="absolute left-2 top-2 z-10 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur pointer-events-none">
           {p.category}
         </span>
         {soldOut ? (
-          <span className="absolute right-2 top-2 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">
+          <span className="absolute right-2 top-2 z-10 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground pointer-events-none">
             Sold out
           </span>
         ) : hasVariants ? (
-          <span className="absolute right-2 top-2 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+          <span className="absolute right-2 top-2 z-10 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground pointer-events-none">
             {variants.length} options
           </span>
         ) : p.stock <= 5 ? (
-          <span className="absolute right-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+          <span className="absolute right-2 top-2 z-10 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground pointer-events-none">
             Only {p.stock} left
           </span>
         ) : null}
-      </Link>
+      </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
         <Link to="/product/$id" params={{ id: p.id }} className="line-clamp-2 text-sm font-semibold leading-snug hover:text-primary transition">
           {p.name}
