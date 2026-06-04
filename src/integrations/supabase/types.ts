@@ -548,6 +548,59 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_meal_order_by_id: {
+        Args: { _id: string }
+        Returns: {
+          address: string | null
+          cooking_fee: number
+          created_at: string
+          customer_name: string
+          delivery_fee: number
+          id: string
+          ingredients_cost: number
+          meal_id: string
+          packaging_fee: number
+          phone: string
+          selected_ingredients: Json
+          status: string
+          total: number
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meal_orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_order_by_id: {
+        Args: { _id: string }
+        Returns: {
+          address: string | null
+          created_at: string
+          customer_name: string
+          delivery_fee: number
+          fulfillment: string
+          id: string
+          items: Json
+          notes: string | null
+          phone: string
+          points_earned: number
+          points_used: number
+          review_reminder_sent_at: string | null
+          status: string
+          subtotal: number
+          total: number
+          user_id: string | null
+          zone: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
