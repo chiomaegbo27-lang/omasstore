@@ -31,8 +31,17 @@ function Home() {
   const [reviews, setReviews] = useState<HomeReview[]>([]);
 
   useEffect(() => {
-    supabase.from("products").select("*, product_variants(*)").eq("in_stock", true).limit(8)
-      .then(({ data }) => setFeatured((data ?? []) as Product[]));
+    const loadFeatured = () =>
+      supabase
+        .from("products")
+        .select("*, product_variants(*), product_media(*)")
+        .eq("in_stock", true)
+        .order("created_at", { ascending: false })
+        .limit(8)
+        .then(({ data }) => setFeatured((data ?? []) as Product[]));
+    loadFeatured();
+    const onFocus = () => loadFeatured();
+    window.addEventListener("focus", onFocus);
 
     supabase
       .from("reviews")
@@ -41,6 +50,8 @@ function Home() {
       .order("created_at", { ascending: false })
       .limit(6)
       .then(({ data }) => setReviews((data ?? []) as unknown as HomeReview[]));
+
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   return (
