@@ -41,8 +41,9 @@ function OrderPage() {
   const [reviewMode, setReviewMode] = useState<"products" | "store" | null>(search.review === "1" ? "products" : null);
 
   useEffect(() => {
-    supabase.from("orders").select("*").eq("id", id).maybeSingle().then(({ data }) => {
-      setOrder(data as Order | null);
+    supabase.rpc("get_order_by_id", { _id: id }).then(({ data }) => {
+      const row = Array.isArray(data) ? data[0] : data;
+      setOrder((row as Order | null) ?? null);
       setLoading(false);
     });
   }, [id]);
