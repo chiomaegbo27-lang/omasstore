@@ -19,11 +19,17 @@ function Shop() {
   const [openSub, setOpenSub] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    supabase
-      .from("products")
-      .select("*, product_variants(*)")
-      .order("category").order("brand").order("subcategory").order("name")
-      .then(({ data }) => setProducts((data ?? []) as Product[]));
+    const load = () =>
+      supabase
+        .from("products")
+        .select("*, product_variants(*), product_media(*)")
+        .order("category").order("brand").order("subcategory").order("name")
+        .then(({ data }) => setProducts((data ?? []) as Product[]));
+    load();
+    // Refresh when the tab regains focus so newly-added units/media show up
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const filtered = useMemo(
