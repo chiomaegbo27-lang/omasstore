@@ -685,6 +685,61 @@ function AdminPage() {
   );
 }
 
+function ComboField({
+  label, value, onChange, placeholder, suggestions,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  suggestions: string[];
+}) {
+  const [adding, setAdding] = useState(value !== "" && !suggestions.includes(value));
+  const listId = `combo-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  const sorted = [...suggestions].sort((a, b) => a.localeCompare(b));
+  const isNew = value !== "" && !suggestions.includes(value);
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center justify-between text-xs font-semibold text-muted-foreground">
+        <span>{label}{isNew && <span className="ml-2 rounded-full bg-accent/30 px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">new</span>}</span>
+        {sorted.length > 0 && (
+          <button
+            type="button"
+            onClick={() => { setAdding((a) => !a); if (adding) onChange(""); }}
+            className="text-[11px] font-semibold text-primary hover:underline"
+          >
+            {adding ? "Pick existing" : "+ Add new"}
+          </button>
+        )}
+      </span>
+      {adding || sorted.length === 0 ? (
+        <>
+          <input
+            type="text"
+            list={listId}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+          />
+          <datalist id={listId}>
+            {sorted.map((s) => <option key={s} value={s} />)}
+          </datalist>
+        </>
+      ) : (
+        <select
+          value={sorted.includes(value) ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+        >
+          <option value="">— Select {label.toLowerCase()} —</option>
+          {sorted.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      )}
+    </label>
+  );
+}
+
 function PField({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <label className="block">
