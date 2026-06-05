@@ -451,9 +451,37 @@ function AdminPage() {
                 </div>
                 <div className="space-y-3">
                   <PField label="Name" value={editingProduct.name ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, name: v })} />
-                  <PField label="Category" value={editingProduct.category ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, category: v })} placeholder="e.g. Grains, Beverages, Toiletries" />
-                  <PField label="Subcategory" value={editingProduct.subcategory ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, subcategory: v || null })} placeholder="e.g. Rice, Soft drinks" />
-                  <PField label="Brand" value={editingProduct.brand ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, brand: v || null })} placeholder="e.g. Indomie, Close-Up" />
+                  <ComboField
+                    label="Category"
+                    value={editingProduct.category ?? ""}
+                    onChange={(v) => setEditingProduct({ ...editingProduct, category: v })}
+                    placeholder="e.g. Grains, Beverages, Toiletries"
+                    suggestions={Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[]}
+                  />
+                  <ComboField
+                    label="Subcategory"
+                    value={editingProduct.subcategory ?? ""}
+                    onChange={(v) => setEditingProduct({ ...editingProduct, subcategory: v || null })}
+                    placeholder="e.g. Rice, Soft drinks"
+                    suggestions={Array.from(new Set(
+                      products
+                        .filter((p) => !editingProduct.category || p.category === editingProduct.category)
+                        .map((p) => p.subcategory)
+                        .filter(Boolean) as string[]
+                    ))}
+                  />
+                  <ComboField
+                    label="Brand"
+                    value={editingProduct.brand ?? ""}
+                    onChange={(v) => setEditingProduct({ ...editingProduct, brand: v || null })}
+                    placeholder="e.g. Indomie, Close-Up"
+                    suggestions={Array.from(new Set(
+                      products
+                        .filter((p) => !editingProduct.category || p.category === editingProduct.category)
+                        .map((p) => p.brand)
+                        .filter(Boolean) as string[]
+                    ))}
+                  />
                   <div className="grid grid-cols-2 gap-3">
                     <PField label="Price (₦)" value={String(editingProduct.price ?? 0)} onChange={(v) => setEditingProduct({ ...editingProduct, price: Number(v) || 0 })} type="number" />
                     <PField label="Stock" value={String(editingProduct.stock ?? 20)} onChange={(v) => setEditingProduct({ ...editingProduct, stock: Number(v) || 0 })} type="number" />
@@ -654,6 +682,61 @@ function AdminPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ComboField({
+  label, value, onChange, placeholder, suggestions,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  suggestions: string[];
+}) {
+  const [adding, setAdding] = useState(value !== "" && !suggestions.includes(value));
+  const listId = `combo-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  const sorted = [...suggestions].sort((a, b) => a.localeCompare(b));
+  const isNew = value !== "" && !suggestions.includes(value);
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center justify-between text-xs font-semibold text-muted-foreground">
+        <span>{label}{isNew && <span className="ml-2 rounded-full bg-accent/30 px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">new</span>}</span>
+        {sorted.length > 0 && (
+          <button
+            type="button"
+            onClick={() => { setAdding((a) => !a); if (adding) onChange(""); }}
+            className="text-[11px] font-semibold text-primary hover:underline"
+          >
+            {adding ? "Pick existing" : "+ Add new"}
+          </button>
+        )}
+      </span>
+      {adding || sorted.length === 0 ? (
+        <>
+          <input
+            type="text"
+            list={listId}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+          />
+          <datalist id={listId}>
+            {sorted.map((s) => <option key={s} value={s} />)}
+          </datalist>
+        </>
+      ) : (
+        <select
+          value={sorted.includes(value) ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="block w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+        >
+          <option value="">— Select {label.toLowerCase()} —</option>
+          {sorted.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      )}
+    </label>
   );
 }
 
