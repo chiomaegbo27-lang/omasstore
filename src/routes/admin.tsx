@@ -451,9 +451,37 @@ function AdminPage() {
                 </div>
                 <div className="space-y-3">
                   <PField label="Name" value={editingProduct.name ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, name: v })} />
-                  <PField label="Category" value={editingProduct.category ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, category: v })} placeholder="e.g. Grains, Beverages, Toiletries" />
-                  <PField label="Subcategory" value={editingProduct.subcategory ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, subcategory: v || null })} placeholder="e.g. Rice, Soft drinks" />
-                  <PField label="Brand" value={editingProduct.brand ?? ""} onChange={(v) => setEditingProduct({ ...editingProduct, brand: v || null })} placeholder="e.g. Indomie, Close-Up" />
+                  <ComboField
+                    label="Category"
+                    value={editingProduct.category ?? ""}
+                    onChange={(v) => setEditingProduct({ ...editingProduct, category: v })}
+                    placeholder="e.g. Grains, Beverages, Toiletries"
+                    suggestions={Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[]}
+                  />
+                  <ComboField
+                    label="Subcategory"
+                    value={editingProduct.subcategory ?? ""}
+                    onChange={(v) => setEditingProduct({ ...editingProduct, subcategory: v || null })}
+                    placeholder="e.g. Rice, Soft drinks"
+                    suggestions={Array.from(new Set(
+                      products
+                        .filter((p) => !editingProduct.category || p.category === editingProduct.category)
+                        .map((p) => p.subcategory)
+                        .filter(Boolean) as string[]
+                    ))}
+                  />
+                  <ComboField
+                    label="Brand"
+                    value={editingProduct.brand ?? ""}
+                    onChange={(v) => setEditingProduct({ ...editingProduct, brand: v || null })}
+                    placeholder="e.g. Indomie, Close-Up"
+                    suggestions={Array.from(new Set(
+                      products
+                        .filter((p) => !editingProduct.category || p.category === editingProduct.category)
+                        .map((p) => p.brand)
+                        .filter(Boolean) as string[]
+                    ))}
+                  />
                   <div className="grid grid-cols-2 gap-3">
                     <PField label="Price (₦)" value={String(editingProduct.price ?? 0)} onChange={(v) => setEditingProduct({ ...editingProduct, price: Number(v) || 0 })} type="number" />
                     <PField label="Stock" value={String(editingProduct.stock ?? 20)} onChange={(v) => setEditingProduct({ ...editingProduct, stock: Number(v) || 0 })} type="number" />
